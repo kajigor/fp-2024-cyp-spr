@@ -2,14 +2,33 @@ module Main where
 
 import Control.Monad (unless)
 import Text.Printf (printf)
+import qualified Data.Map as Map
 
 ageOn :: String -> Float -> Float
-ageOn planet ageInSeconds =
-  undefined
+ageOn planet = 
+  case planetYearCoef planet of
+    Just yearCoef -> flip (/) (earthLength * yearCoef)
+    Nothing -> error ("Is not a planet: " ++ planet)
+  where
+    earthLength = 31557600.0
+    planetYearCoef planetName = Map.lookup planetName ( Map.fromList
+      [("Earth", 1)
+      ,("Mercury", 0.2408467)
+      ,("Venus", 0.61519726)
+      ,("Mars", 1.8808158)
+      ,("Jupiter", 11.862615)
+      ,("Saturn", 29.447498)
+      ,("Uranus", 84.016846)
+      ,("Neptune", 164.79132)
+      ])
+  
 
 isLeapYear :: Int -> Bool
-isLeapYear year =
-  undefined
+isLeapYear year
+  | year `mod` 400 == 0 = True
+  | year `mod` 100 == 0 = False
+  | year `mod` 4 == 0   = True
+  | otherwise           = False
 
 main = do 
   runTests
