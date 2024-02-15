@@ -2,16 +2,30 @@ module Main where
 
 import Control.Monad (unless)
 import Text.Printf (printf)
+import Control.Applicative.Lift (failure)
+import Control.Exception (SomeException(SomeException))
 
 ageOn :: String -> Float -> Float
 ageOn planet ageInSeconds =
-  undefined
+  let ageInEarthYears = ageInSeconds / 31557600 in
+  case planet of
+    "Mercury" -> ageInEarthYears / 0.2408467
+    "Venus" -> ageInEarthYears / 0.61519726
+    "Earth" -> ageInEarthYears
+    "Mars" -> ageInEarthYears / 1.8808158
+    "Jupiter" -> ageInEarthYears / 11.862615
+    "Saturn" -> ageInEarthYears / 29.447498
+    "Uranus" -> ageInEarthYears / 84.016846
+    "Neptune" -> ageInEarthYears / 164.79132
+    _ -> error $ printf "%s is not a planet" planet
+
 
 isLeapYear :: Int -> Bool
-isLeapYear year =
-  undefined
+isLeapYear year
+  | year >= 0 = (year `mod` 4 == 0) && (year `mod` 100 /= 0) || (year `mod` 400 == 0)
+  | otherwise = error $ printf "Year %d is negative" year
 
-main = do 
+main = do
   runTests
   putStrLn "Done"
 
@@ -19,23 +33,23 @@ runTests = do
     runAgeOnTests
     runIsLeapYearTests
   where
-    describeFailure functionName errorMsg input exp actual = 
-      printf "Test for a function %s has failed:\n  %s\n  Input: %s\n  Expected: %s\n  But got: %s\n" 
-             functionName 
-             errorMsg 
-             (show input) 
-             (show exp) 
+    describeFailure functionName errorMsg input exp actual =
+      printf "Test for a function %s has failed:\n  %s\n  Input: %s\n  Expected: %s\n  But got: %s\n"
+             functionName
+             errorMsg
+             (show input)
+             (show exp)
              (show actual)
 
     runAgeOnTests =
         mapM_ test cases
       where
-        test (planet, seconds, exp) = 
-            let actual = ageOn planet seconds in 
+        test (planet, seconds, exp) =
+            let actual = ageOn planet seconds in
             unless (actual `isEqual` exp) $ describeFailure "ageOn" (printf "Wrong age on planet %s" planet :: String) seconds exp actual
-          where 
+          where
             isEqual x y = roundTo 2 x == roundTo 2 y
-            roundTo n = (/ 10 ^ n) . fromIntegral . round . (* 10 ^ n) 
+            roundTo n = (/ 10 ^ n) . fromIntegral . round . (* 10 ^ n)
         cases = [ ( "Earth"
                   , 1000000000
                   , 31.69
@@ -74,9 +88,9 @@ runTests = do
         mapM_ test cases
       where
         test (errorMsg, input, exp) =
-          let actual = isLeapYear input in 
+          let actual = isLeapYear input in
           unless (actual == exp) $ describeFailure "isLeapYear" errorMsg input exp actual
-         
+
         cases = [ ( "year not divisible by 4 in common year"
                   , 2015
                   , False
