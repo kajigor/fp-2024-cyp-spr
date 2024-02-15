@@ -22,7 +22,9 @@ ageOn planet ageInSeconds = (ageInSeconds / 31557600) / mapPlanetYearsToEarthYea
   
 
 isLeapYear :: Int -> Bool
-isLeapYear year = ((year `mod` 4 == 0) && (year `mod` 100 /= 0)) || (year `mod` 400 == 0)
+isLeapYear year
+  | year >= 0 = ((year `mod` 4 == 0) && (year `mod` 100 /= 0)) || (year `mod` 400 == 0)
+  | otherwise = error ("Year is negative" ++ show year)
 
 main = do 
   runTests
