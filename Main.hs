@@ -2,14 +2,27 @@ module Main where
 
 import Control.Monad (unless)
 import Text.Printf (printf)
+import Distribution.Simple.Utils (lowercase)
 
+
+mapPlanetYearsToEarthYears planet = case lowercase planet of 
+   "mercury" -> 0.2408467
+   "venus" -> 0.61519726
+   "earth" -> 1.0
+   "mars" -> 1.8808158
+   "jupiter" -> 11.862615
+   "saturn" -> 29.447498
+   "uranus" -> 84.016846
+   "neptune" -> 164.79132
+   _ -> error ("Illegal planet: " ++ planet)
+
+ 
 ageOn :: String -> Float -> Float
-ageOn planet ageInSeconds =
-  undefined
+ageOn planet ageInSeconds = (ageInSeconds / 31557600) / mapPlanetYearsToEarthYears planet
+  
 
 isLeapYear :: Int -> Bool
-isLeapYear year =
-  undefined
+isLeapYear year = ((year `mod` 4 == 0) && (year `mod` 100 /= 0)) || (year `mod` 400 == 0)
 
 main = do 
   runTests
