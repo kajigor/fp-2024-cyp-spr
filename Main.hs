@@ -5,11 +5,21 @@ import Text.Printf (printf)
 
 ageOn :: String -> Float -> Float
 ageOn planet ageInSeconds =
-  undefined
+  let ageInEarthYears = ageInSeconds / 31557600 in case planet of
+  "Mercury" -> ageInEarthYears / 0.2408467
+  "Venus" -> ageInEarthYears / 0.61519726
+  "Earth" -> ageInEarthYears
+  "Mars" -> ageInEarthYears / 1.8808158
+  "Jupiter" -> ageInEarthYears / 11.862615
+  "Saturn" -> ageInEarthYears / 29.447498
+  "Uranus" -> ageInEarthYears / 84.016846 
+  "Neptune" -> ageInEarthYears / 164.79132
+  "Pluto" -> error "This is not a planet!"
+  _ -> error "Unrecognised planet!"
 
 isLeapYear :: Int -> Bool
 isLeapYear year =
-  undefined
+  mod year 4 == 0 && (mod year 100 /= 0 || mod year 400 == 0 )
 
 main = do 
   runTests
