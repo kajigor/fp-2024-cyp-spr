@@ -19,6 +19,7 @@ ageOn planet ageInSeconds = ageInSeconds / (yearToEarthYears * 31557600)
 
 isLeapYear :: Int -> Bool
 isLeapYear year
+  | year < 0 = error ("Negative year: '" ++ show year ++ "'") 
   | year `mod` 400 == 0 = True
   | year `mod` 100 == 0 = False
   | year `mod` 4 == 0 = True
