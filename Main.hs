@@ -3,13 +3,28 @@ module Main where
 import Control.Monad (unless)
 import Text.Printf (printf)
 
+parsePlanetName (planet::[Char])
+  | planet == "Mercury" = 0.2408467
+  | planet == "Venus" = 0.61519726
+  | planet == "Earth" = 1.0
+  | planet == "Mars" = 1.8808158
+  | planet == "Jupiter" = 11.862615
+  | planet == "Saturn" = 29.447498
+  | planet == "Uranus" = 84.016846
+  | planet == "Neptune" = 164.79132
+parsePlanetName (badPlanet::[Char]) = error (badPlanet ++ " is not a right planet from solar system!")
+  
 ageOn :: String -> Float -> Float
 ageOn planet ageInSeconds =
-  undefined
+  (ageInSeconds / 31557600) / parsePlanetName planet
 
 isLeapYear :: Int -> Bool
-isLeapYear year =
-  undefined
+isLeapYear year
+  | mod year 400 == 0 = True
+  | mod year 100 == 0 = False
+  | mod year 4 == 0 = True
+
+isLeapYear _ = False 
 
 main = do 
   runTests
