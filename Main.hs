@@ -3,18 +3,28 @@ module Main where
 import Control.Monad (unless)
 import Text.Printf (printf)
 
+
+countAgeOn planetOn timeInSeconds [] = error ("Planet " ++ planetOn ++ " does not exists ;(")
+
+countAgeOn planetOn timeInSeconds ((planetName, planetModifier, isPlanet):t) =
+  if (planetOn == planetName) then
+    if (isPlanet) then timeInSeconds / 31557600 / planetModifier
+    else error (planetOn ++ " is not a planet anymore ;(")
+  else countAgeOn planetOn timeInSeconds t
+
+
 ageOn :: String -> Float -> Float
-ageOn planet ageInSeconds
-  | planet == "Mercury" = ageInSeconds / 31557600 / 0.2408467
-  | planet == "Venus" = ageInSeconds / 31557600 / 0.61519726
-  | planet == "Earth" = ageInSeconds / 31557600
-  | planet == "Mars" = ageInSeconds / 31557600 / 1.8808158
-  | planet == "Jupiter" = ageInSeconds / 31557600 / 11.862615
-  | planet == "Saturn" = ageInSeconds / 31557600 / 29.447498
-  | planet == "Uranus" = ageInSeconds / 31557600 / 84.016846
-  | planet == "Neptune" = ageInSeconds / 31557600 / 164.79132
-  | planet == "Pluto" = error ("Pluto is not planet anymore ;(")
-  | otherwise = error (planet ++ "is not a correct state of planet")
+ageOn planet ageInSeconds =
+  let mercuryInfo = ("Mercury", 0.2408467, True)
+      venusInfo = ("Venus", 0.61519726, True)
+      earthInfo = ("Earth", 1, True)
+      marsInfo = ("Mars", 1.8808158, True)
+      jupiterInfo = ("Jupiter", 11.862615, True)
+      saturnInfo = ("Saturn", 29.447498, True)
+      uranusInfo = ("Uranus", 84.016846, True)
+      neptuneInfo = ("Neptune", 164.79132, True)
+      plutoInfo = ("Pluto", 1, False)
+  in countAgeOn planet ageInSeconds [mercuryInfo, venusInfo, earthInfo, marsInfo, jupiterInfo, saturnInfo, uranusInfo, neptuneInfo, plutoInfo]
 
 
 isLeapYear :: Int -> Bool
@@ -25,7 +35,7 @@ isLeapYear year =
         if (year `mod` 4 == 0) then True else False
 
 
-main = do 
+main = do
   runTests
   putStrLn "Done"
 
