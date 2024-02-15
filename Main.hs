@@ -2,8 +2,6 @@ module Main where
 
 import Control.Monad (unless)
 import Text.Printf (printf)
-import Control.Applicative.Lift (failure)
-import Control.Exception (SomeException(SomeException))
 
 ageOn :: String -> Float -> Float
 ageOn planet ageInSeconds =
