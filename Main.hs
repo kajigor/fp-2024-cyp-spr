@@ -10,22 +10,23 @@ ageOnEarth ageInSeconds =
 ageOn :: String -> Float -> Float
 ageOn planet ageInSeconds =
   case planet of
-    "Mercury" -> ageOnEarth ageInSeconds / 0.2408467
-    "Venus" -> ageOnEarth ageInSeconds / 0.61519726
-    "Earth" -> ageOnEarth ageInSeconds
-    "Mars" -> ageOnEarth ageInSeconds / 1.8808158 
-    "Jupiter" -> ageOnEarth ageInSeconds / 11.862615
-    "Saturn" -> ageOnEarth ageInSeconds / 29.447498
-    "Uranus" -> ageOnEarth ageInSeconds / 84.016846
-    "Neptune" -> ageOnEarth ageInSeconds / 164.79132
-    _ -> error "It's not a planet"
+    "Mercury"   -> ageOnEarth ageInSeconds / 0.2408467
+    "Venus"     -> ageOnEarth ageInSeconds / 0.61519726
+    "Earth"     -> ageOnEarth ageInSeconds
+    "Mars"      -> ageOnEarth ageInSeconds / 1.8808158 
+    "Jupiter"   -> ageOnEarth ageInSeconds / 11.862615
+    "Saturn"    -> ageOnEarth ageInSeconds / 29.447498
+    "Uranus"    -> ageOnEarth ageInSeconds / 84.016846
+    "Neptune"   -> ageOnEarth ageInSeconds / 164.79132
+    _           -> error "It's not a planet"
 
 isLeapYear :: Int -> Bool
 isLeapYear year
+  | year < 0            = False
   | year `mod` 400 == 0 = True
   | year `mod` 100 == 0 = False
-  | year `mod` 4 == 0 = True
-  | otherwise = False
+  | year `mod` 4 == 0   = True
+  | otherwise           = False
 
 main = do 
   runTests
