@@ -15,6 +15,7 @@ ageOn planet ageInSeconds =
             "Saturn" -> 29.447498
             "Uranus" -> 84.016846
             "Neptune" -> 164.79132
+            "Pluto" -> error "But Pluto is not a planet?"
             _ -> error "Wrong planet name"
   in ageInYears / planetCoefficient planet
   where ageInYears = ageInSeconds / 31557600
