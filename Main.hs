@@ -6,17 +6,38 @@ import Text.Printf (printf)
 import Control.Monad (unless)
 import Data.List (sort)
 
+lo x = filter (x >)
+hi x = filter (x <)
+eq x = filter (x ==)
+
 quickSort :: [Int] -> [Int]
-quickSort = id 
+quickSort [] = []
+quickSort (h:t) = quickSort (lo h t) ++ h:(eq h t) ++ quickSort (hi h t)
+
+
+-- >>mergeSort
+-- I believe that this implementation works in nlogn as for 500'000 it works for 16 sec
+splittin li = ([x | (i, x) <- zip [0..] li, i `mod` 2 == 0], [x | (i, x) <- zip [0..] li, i `mod` 2 == 1])
+
+mergin li1 [] = li1
+mergin [] li2 = li2
+mergin (h1:t1) (h2:t2) = if h1 < h2 then h1 : mergin t1 (h2 : t2) else h2 : mergin t2 (h1 : t1)
+
+mergeSort :: [Int] -> [Int]
+mergeSort [] = []
+mergeSort [x] = [x]
+mergeSort li =
+  let (eve, od) = splittin li in mergin (mergeSort eve) (mergeSort od)
+-- <<mergeSort
 
 map' :: (a -> b) -> [a] -> [b]
-map' = undefined 
+map' f = foldr (\x acc -> (f x):acc) []
 
 concatMap' :: (a -> [b]) -> [a] -> [b]
-concatMap' = undefined 
+concatMap' f = foldr (\x -> (++) (f x)) []
 
 positions :: (a -> Bool) -> [a] -> [Int]
-positions = undefined 
+positions f li = map fst (filter (\(i, x) -> f x) (zip [0..] li))
 
 main = do
   runTests
@@ -26,6 +47,7 @@ runTests = do
     runTestMap
     runTestConcatMap
     runTestQuickSort
+    runTestMergeSort
     runTestPositions
   where
     describeFailure :: (Show a, Show b) => String -> String -> a -> b -> b -> IO ()
@@ -69,6 +91,16 @@ runTests = do
           let act = quickSort xs in 
           let exp = sort xs in 
           unless (act == exp) $ describeFailure "quickSort" "" xs exp act
+
+    runTestMergeSort = do
+        test []
+        test [10, 9 .. 0]
+        test [ if even x then negate x else x | x <- [0..10] ]
+      where
+        test xs =
+          let act = mergeSort xs in 
+          let exp = sort xs in 
+          unless (act == exp) $ describeFailure "mergeSort" "" xs exp act
 
     runTestPositions = do 
         test "even" even [] [] 
