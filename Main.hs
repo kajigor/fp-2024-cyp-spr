@@ -7,16 +7,27 @@ import Control.Monad (unless)
 import Data.List (sort)
 
 quickSort :: [Int] -> [Int]
-quickSort = id 
+quickSort [] = []
+quickSort (x:xs) = quickSortStep xs [] [] []
+  where quickSortStep [] lstLess lstEqual lstMore = quickSort lstLess ++ lstEqual ++ (x : quickSort lstMore)
+        quickSortStep (y:ys) lstLess lstEqual lstMore
+          | y < x = quickSortStep ys (y:lstLess) lstEqual lstMore
+          | y == x = quickSortStep ys lstLess (y:lstEqual) lstMore
+          | y > x = quickSortStep ys lstLess lstEqual (y:lstMore)
 
 map' :: (a -> b) -> [a] -> [b]
-map' = undefined 
+map' f = foldr (\elem lst -> f elem:lst) []
 
 concatMap' :: (a -> [b]) -> [a] -> [b]
-concatMap' = undefined 
+concatMap' f = (foldr (\elems lst -> elems ++ lst) []) . (map' f)
 
 positions :: (a -> Bool) -> [a] -> [Int]
-positions = undefined 
+positions p lst = let
+  positions' [] _ = []
+  positions' (x:xs) n | p x = n:recResult
+                      | otherwise = recResult
+                        where recResult = positions' xs (n + 1)
+  in positions' lst 0
 
 main = do
   runTests
@@ -60,22 +71,22 @@ runTests = do
           let exp = concatMap f xs in
           unless (act == exp) $ describeFailure "concatMap'" (printf "concatMap' (%s)" fRepr) xs exp act
 
-    runTestQuickSort = do 
-        test [] 
-        test [10, 9 .. 0] 
+    runTestQuickSort = do
+        test []
+        test [10, 9 .. 0]
         test [ if even x then negate x else x | x <- [0..10] ]
-      where 
-        test xs = 
-          let act = quickSort xs in 
-          let exp = sort xs in 
+      where
+        test xs =
+          let act = quickSort xs in
+          let exp = sort xs in
           unless (act == exp) $ describeFailure "quickSort" "" xs exp act
 
-    runTestPositions = do 
-        test "even" even [] [] 
-        test "even" even [0..10] [0,2..10] 
+    runTestPositions = do
+        test "even" even [] []
+        test "even" even [0..10] [0,2..10]
         test "==0" (==0) [0,1,0,0,1,1,0] [0,2,3,6]
         test "\\xs -> length xs `mod` 3 == 2" ((==2) . (`mod` 3) . length) [replicate x x | x <- [0..10]] [2,5..10]
-      where  
-        test fRepr f xs exp = 
-          let act = positions f xs in 
+      where
+        test fRepr f xs exp =
+          let act = positions f xs in
           unless (act == exp) $ describeFailure "positions" (printf "positions (%s)" $ show xs) xs exp act
