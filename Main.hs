@@ -7,16 +7,26 @@ import Control.Monad (unless)
 import Data.List (sort)
 
 quickSort :: [Int] -> [Int]
-quickSort = id 
+quickSort [] = []
+quickSort [x] = [x]
+quickSort (h:t) = 
+  let pivot = h in
+  let lXS = filter (<= pivot) t in
+  let gXS = filter (> pivot) t in
+  do 
+    quickSort lXS ++ [pivot] ++ quickSort gXS
 
 map' :: (a -> b) -> [a] -> [b]
-map' = undefined 
+map' f [] = []
+map' f ys = foldr (\x xs -> (f x):xs ) [] ys
 
 concatMap' :: (a -> [b]) -> [a] -> [b]
-concatMap' = undefined 
+concatMap' f [] = []
+concatMap' f xs = foldr (\y ys -> f y ++ ys) [] xs
 
 positions :: (a -> Bool) -> [a] -> [Int]
-positions = undefined 
+positions f [] = []
+positions f xs = [i | (el, i) <- zip xs [0..], f el ]
 
 main = do
   runTests
@@ -64,6 +74,8 @@ runTests = do
         test [] 
         test [10, 9 .. 0] 
         test [ if even x then negate x else x | x <- [0..10] ]
+        test [5, 4, 2, 3, 5, 1]
+        test [5, 5, 5, 5, 4]
       where 
         test xs = 
           let act = quickSort xs in 
