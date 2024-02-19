@@ -18,8 +18,9 @@ ageOn planet ageInSeconds =
   _ -> error "Unrecognised planet!"
 
 isLeapYear :: Int -> Bool
-isLeapYear year =
-  mod year 4 == 0 && (mod year 100 /= 0 || mod year 400 == 0 )
+isLeapYear year 
+  | year < 0 = error "Year is negative"
+  | otherwise =  mod year 4 == 0 && (mod year 100 /= 0 || mod year 400 == 0 )
 
 main = do 
   runTests
