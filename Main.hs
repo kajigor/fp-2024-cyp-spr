@@ -15,11 +15,13 @@ ageOn planet ageInSeconds =
     "Saturn" -> ageOnEarth / 29.447498
     "Uranus" -> ageOnEarth / 84.016846
     "Neptune" -> ageOnEarth / 164.79132
-    _  -> undefined
+    _  -> error $ "Unknown planet \"" ++ planet ++ "\""
 
 
 isLeapYear :: Int -> Bool
-isLeapYear year = ((mod year 4 == 0)  && (mod year 100 /= 0) ) || (mod year 400 == 0)
+isLeapYear year
+  | year >= 0 = ((mod year 4 == 0)  && (mod year 100 /= 0) ) || (mod year 400 == 0)
+  | otherwise = error "Year must be non negative"
 
 main = do 
   runTests
