@@ -8,7 +8,7 @@ import Data.List (sort)
 
 quickSort :: [Int] -> [Int]
 quickSort [] = []
-quickSort (mid: tl) = left ++ [mid] ++ right 
+quickSort (mid: tl) = left ++ mid : right 
                     where left  =  quickSort [x | x <- tl, x < mid] 
                           right = [x | x <- tl, x >=mid]
 
@@ -21,16 +21,11 @@ concatMap' _ [] = []
 concatMap' f (h : ls) =   f h ++ concatMap' f ls
 
 
-
-positionsHelper :: Int -> (a -> Bool) -> [a] -> [Int]
-
-positionsHelper _ _ [] = []
-
-positionsHelper n f (h : tl) = if f h then n : positionsHelper (n + 1) f tl else positionsHelper (n+1) f tl
-
-
 positions :: (a -> Bool) -> [a] -> [Int]
 positions = positionsHelper 0
+            where positionsHelper _ _ [] = []
+                  positionsHelper n f (h : tl) =  if f h then n : tailLs else tailLs
+                                                  where tailLs = positionsHelper (n + 1) f tl                  
 
 main = do
   runTests
