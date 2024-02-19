@@ -13,7 +13,7 @@ quickSort (x:xs) = let
   leftPart = quickSort [a | a <- xs, a < x]
   rightPart = quickSort [a | a <- xs, a >= x]
   in
-    leftPart ++ [x] ++ rightPart
+    leftPart ++ x : rightPart
 
 
 map' :: (a -> b) -> [a] -> [b]
@@ -22,11 +22,11 @@ map' f = foldr (\y ys -> (f y) : ys) []
 concatMap' :: (a -> [b]) -> [a] -> [b]
 concatMap' f = foldl (\x y -> x ++ f y) []
 
-positions' n ys f [] = ys
-positions' n ys f (x:xs) = if f x then positions' (n + 1) (ys ++ [n]) f xs  else positions' (n + 1) ys f xs 
-
 positions :: (a -> Bool) -> [a] -> [Int]
-positions = positions' 0 []
+positions = positions' 0 [] where
+  positions' n ys f [] = ys
+  positions' n ys f (x:xs) = if f x then positions' (n + 1) (ys ++ [n]) f xs  else positions' (n + 1) ys f xs 
+
 
 main = do
   runTests
