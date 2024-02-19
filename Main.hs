@@ -6,17 +6,27 @@ import Text.Printf (printf)
 import Control.Monad (unless)
 import Data.List (sort)
 
+
 quickSort :: [Int] -> [Int]
-quickSort = id 
+quickSort [] = []
+quickSort (x:xs) = let 
+  leftPart = quickSort [a | a <- xs, a < x]
+  rightPart = quickSort [a | a <- xs, a >= x]
+  in
+    leftPart ++ [x] ++ rightPart
+
 
 map' :: (a -> b) -> [a] -> [b]
-map' = undefined 
+map' f = foldr (\y ys -> (f y) : ys) []
 
 concatMap' :: (a -> [b]) -> [a] -> [b]
-concatMap' = undefined 
+concatMap' f = foldl (\x y -> x ++ f y) []
+
+positions' n ys f [] = ys
+positions' n ys f (x:xs) = if f x then positions' (n + 1) (ys ++ [n]) f xs  else positions' (n + 1) ys f xs 
 
 positions :: (a -> Bool) -> [a] -> [Int]
-positions = undefined 
+positions = positions' 0 []
 
 main = do
   runTests
