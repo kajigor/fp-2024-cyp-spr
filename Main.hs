@@ -6,17 +6,35 @@ import Text.Printf (printf)
 import Control.Monad (unless)
 import Data.List (sort)
 
+divide (lower, greater) [] pivot = (lower, greater)
+
+divide (lower, greater) (h:t) pivot
+  |  h <= pivot = divide (lower ++ [h], greater) t pivot
+  |  otherwise = divide (lower, greater ++ [h]) t pivot
+
+
+sorting [] = []
+sorting [el] = [el]
+sorting [first, second] = if first > second then [second, first] else [first, second]
+sorting xs = let n = length xs
+                 pivot = (min (xs !! 0) (xs !! 1))
+                 (lower, greater) = divide ([], []) xs pivot
+             in  (sorting lower) ++ (sorting greater)
+
 quickSort :: [Int] -> [Int]
-quickSort = id 
+quickSort = sorting
 
 map' :: (a -> b) -> [a] -> [b]
-map' = undefined 
+map' f xs = foldl (\prev curr -> prev ++ [f curr]) [] xs
 
 concatMap' :: (a -> [b]) -> [a] -> [b]
-concatMap' = undefined 
+concatMap' f xs = foldl (\prev curr -> prev ++ (f curr)) [] xs
+
+enumerate' :: [a] -> [(Int, a)]
+enumerate' xs = zip [0..(length xs)] xs
 
 positions :: (a -> Bool) -> [a] -> [Int]
-positions = undefined 
+positions f xs = foldl (\prev (ind, value) -> if f value then prev ++ [ind] else prev) [] (enumerate' xs)
 
 main = do
   runTests
