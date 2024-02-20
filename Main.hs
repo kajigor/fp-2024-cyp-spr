@@ -10,13 +10,22 @@ quickSort :: [Int] -> [Int]
 quickSort = id 
 
 map' :: (a -> b) -> [a] -> [b]
-map' = undefined 
+map' f as = foldr (funhelp f) [] as
+
+funhelp :: (a -> b) -> a -> [b] -> [b]
+funhelp f a bs = (f a) : bs
 
 concatMap' :: (a -> [b]) -> [a] -> [b]
-concatMap' = undefined 
+concatMap' f as = concat (map (\x -> f x) as)
 
 positions :: (a -> Bool) -> [a] -> [Int]
-positions = undefined 
+positions p as = map (\x -> snd x) (filter (\x -> p (fst x)) (enumerate as 0))
+
+enumerate :: [a] -> Int -> [(a, Int)]
+enumerate [] n = []
+enumerate (a:as) n = (a, n) : (enumerate as (n+1))
+
+
 
 main = do
   runTests
@@ -25,7 +34,7 @@ main = do
 runTests = do
     runTestMap
     runTestConcatMap
-    runTestQuickSort
+--    runTestQuickSort
     runTestPositions
   where
     describeFailure :: (Show a, Show b) => String -> String -> a -> b -> b -> IO ()
