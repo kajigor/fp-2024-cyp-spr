@@ -30,7 +30,6 @@ positions p (h:t)
   where 
     t' = map (+1) (positions p t)
 
-
 main = do
   runTests
   putStrLn "Done"
@@ -91,4 +90,6 @@ runTests = do
       where  
         test fRepr f xs exp = 
           let act = positions f xs in 
+
           unless (act == exp) $ describeFailure "positions" (printf "positions (%s)" $ show xs) xs exp act
+
