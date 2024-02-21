@@ -9,8 +9,8 @@ import Data.List (sort)
 quickSort :: [Int] -> [Int]
 quickSort [] = []
 quickSort (mid: tl) = left ++ mid : right 
-                    where left  =  quickSort [x | x <- tl, x < mid] 
-                          right = [x | x <- tl, x >=mid]
+                    where left  =  quickSort [x | x <- tl, x <  mid] 
+                          right =  quickSort [x | x <- tl, x >= mid]
 
 map' :: (a -> b) -> [a] -> [b]
 map' _ [] = []
