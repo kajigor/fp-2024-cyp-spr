@@ -14,11 +14,11 @@ quickSort (h:t) =
   let lXS = filter (<= pivot) t in
   let gXS = filter (> pivot) t in
   do 
-    quickSort lXS ++ [pivot] ++ quickSort gXS
+    quickSort lXS ++ pivot : quickSort gXS
 
 map' :: (a -> b) -> [a] -> [b]
 map' f [] = []
-map' f ys = foldr (\x xs -> (f x):xs ) [] ys
+map' f ys = foldr (\x xs -> f x:xs ) [] ys
 
 concatMap' :: (a -> [b]) -> [a] -> [b]
 concatMap' f [] = []
