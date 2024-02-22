@@ -4,19 +4,29 @@ module Main where
 
 import Text.Printf (printf)
 import Control.Monad (unless)
-import Data.List (sort)
+import Data.List (sort, partition)
 
 quickSort :: [Int] -> [Int]
-quickSort = id 
+quickSort [] = []
+quickSort (x:xs) = (quickSort less) ++ [x] ++ (quickSort greaterOrEqual)
+  where (less, greaterOrEqual) = partition (<x) xs
 
 map' :: (a -> b) -> [a] -> [b]
-map' = undefined 
+map' _ [] = []
+map' f (x:xs) = f x : map' f xs
 
 concatMap' :: (a -> [b]) -> [a] -> [b]
-concatMap' = undefined 
+concatMap' _ [] = []
+concatMap' f (x:xs) = (f x) ++ concatMap' f xs -- You can make it O(n), if you are ok with reversed order of each subarray
 
 positions :: (a -> Bool) -> [a] -> [Int]
-positions = undefined 
+positions pred arr = reverse $ positionsHelper [] 0 pred arr
+  where 
+  positionsHelper :: [Int] -> Int -> (a -> Bool) -> [a] -> [Int]
+  positionsHelper numbersGot _ _ [] = numbersGot
+  positionsHelper numbersGot curPos pred (x:xs) = positionsHelper updNumbersGot (curPos + 1) pred xs
+    where
+    updNumbersGot = if (pred x) then curPos:numbersGot else numbersGot
 
 main = do
   runTests
