@@ -1,4 +1,4 @@
-module Main where 
+module Main where
 
 import Text.Printf (printf)
 import Control.Monad (unless)
@@ -47,20 +47,45 @@ instance Eq Expr where
   CE expr1 op2 expr2 == Marg op1 value2 = False
 
 
-data Error = OutOfPossibleValuesError Operator1 Expr | ZeroDivisionError Expr Expr
+data Error = OutOfPossibleValuesError Operator1 Double | ZeroDivisionError Double Double
 
 instance Show Error where
-  show (OutOfPossibleValuesError op expr) = "OutOfPossibleValuesError: operator " ++ (show op) ++ " can not handle expression " ++ (show expr)
+  show (OutOfPossibleValuesError op value) = "OutOfPossibleValuesError: operator " ++ (show op) ++ " can not handle expression " ++ (show value)
   show (ZeroDivisionError chislitel znamenatel) = "ZeroDivisionError: numerator " ++ (show chislitel) ++ " can not be divided by denominator " ++ (show znamenatel)
 
 instance Eq Error where
-  OutOfPossibleValuesError op1 expr1 == OutOfPossibleValuesError op2 expr2 = op1 == op2 && expr1 == expr2
+  OutOfPossibleValuesError op1 value1 == OutOfPossibleValuesError op2 value2 = op1 == op2 && value1 == value2
   ZeroDivisionError chislitel1 znamenatel1 == ZeroDivisionError chislitel2 znamenatel2 = chislitel1 == chislitel2 && znamenatel1 == znamenatel2
   ZeroDivisionError chislitel znamenatel == OutOfPossibleValuesError op expr = False
-  OutOfPossibleValuesError op expr == ZeroDivisionError chislitel znamenatel = False
+  OutOfPossibleValuesError op value == ZeroDivisionError chislitel znamenatel = False
 
---eval :: Expr -> Either Error Double
---eval = undefined
+
+defineOperationEvaluator :: Operator2 -> (Double -> Double -> Double)
+defineOperationEvaluator op
+  | op == Div = (/)
+  | op == Mul = (*)
+  | op == Plus = (+)
+  | op == Min = (-)
+
+eval :: Expr -> Either Error Double
+eval (Arg value) = Right value
+
+eval (Marg Neg expr) = case (eval expr) of
+  Right result -> Right (-result)
+  Left exception -> Left exception
+
+eval (Marg Sqrt expr) = case (eval expr) of
+  Right result -> if (result >= 0) then Right (result**0.5) else Left (OutOfPossibleValuesError Sqrt result)
+  Left exception -> Left exception
+
+eval (CE expr1 op expr2) = case (eval expr1) of
+  Right result1 -> case (eval expr2) of
+    Right result2 -> case (op) of
+      Div -> if (result2 /= 0) then Right (defineOperationEvaluator op result1 result2) else Left (ZeroDivisionError result1 result2)
+      _ -> Right (defineOperationEvaluator op result1 result2)
+    Left exception -> Left exception
+  Left exception -> Left exception
+
 --
 --cases :: [(Expr, Either Error Double)]
 --cases = undefined
@@ -77,4 +102,3 @@ instance Eq Error where
 main :: IO ()
 main = putStr "Start"
 --  mapM_ (uncurry test) cases
-  
