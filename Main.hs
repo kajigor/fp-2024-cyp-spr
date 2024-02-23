@@ -11,38 +11,24 @@ data Expr = Const Double
             | Mult Expr Expr
             | Div Expr Expr
             | Pow Expr Expr 
+          deriving Eq
 
 instance Show Expr where 
   show e = case e of
           (Const c)       -> show c
           (SquareRoot e)  -> printf "sqrt(%s)" (show e)
-          (Plus e1 e2)    -> putBrackets $ show e1 ++ "+" ++ show e2
-          (Minus e1 e2)   -> putBrackets $ show e1 ++ "-" ++ show e2
-          (Mult e1 e2)    -> putBrackets $ show e1 ++ "*" ++ show e2
-          (Div e1 e2)     -> putBrackets $ show e1 ++ "/" ++ show e2
-          (Pow e1 e2)     -> putBrackets $ show e1 ++ "^" ++ show e2
-          where putBrackets s = '(' : s ++ ")"
+          (Plus e1 e2)    -> printf "(%s)" $ show e1 ++ "+" ++ show e2
+          (Minus e1 e2)   -> printf "(%s)" $ show e1 ++ "-" ++ show e2
+          (Mult e1 e2)    -> printf "(%s)" $ show e1 ++ "*" ++ show e2
+          (Div e1 e2)     -> printf "(%s)" $ show e1 ++ "/" ++ show e2
+          (Pow e1 e2)     -> printf "(%s)" $ show e1 ++ "^" ++ show e2
 
-instance Eq Expr where 
-  (==) (Const c1) (Const c2) = c1 == c2
-  (==) (SquareRoot c1) (SquareRoot c2) = c1 == c2
-  (==) (Plus e1 e2) (Plus e1' e2') = e1 == e1' && e2 == e2'
-  (==) (Minus e1 e2) (Minus e1' e2') = e1 == e1' && e2 == e2'
-  (==) (Mult e1 e2) (Mult e1' e2') = e1 == e1' && e2 == e2'
-  (==) (Div e1 e2) (Div e1' e2') = e1 == e1' && e2 == e2'
-  (==) (Pow e1 e2) (Pow e1' e2') = e1 == e1' && e2 == e2'
-  (==) _ _ = False
-
-data Error = DivisionByZero Expr Expr | RootOfNegative Expr
+data Error  = DivisionByZero Expr Expr | RootOfNegative Expr
+            deriving Eq
 
 instance Show Error where 
-  show (DivisionByZero e1 e2) = printf "Error when dividing %s by %s. %s was equal to zero" (show e1) (show e2) (show e2)
+  show (DivisionByZero e1 e2) = printf "Error when dividing %s by %s. Denominator was equal to zero" (show e1) (show e2)
   show (RootOfNegative e)     = printf "Error when taking square root. Expression %s was negative" (show e)
-
-instance Eq Error where 
-  (==) (DivisionByZero _ _) (DivisionByZero _ _) = True 
-  (==) (RootOfNegative _) (RootOfNegative _) = True 
-  (==) _ _ = False
 
 
 eval :: Expr -> Either Error Double 
