@@ -7,16 +7,24 @@ import Control.Monad (unless)
 import Data.List (sort)
 
 quickSort :: [Int] -> [Int]
-quickSort = id 
+quickSort [] = []
+quickSort (mid: tl) = left ++ mid : right 
+                    where left  =  quickSort [x | x <- tl, x <  mid] 
+                          right =  quickSort [x | x <- tl, x >= mid]
 
 map' :: (a -> b) -> [a] -> [b]
-map' = undefined 
+map' _ [] = []
+map' f (x : xs) = f x : map' f xs
 
 concatMap' :: (a -> [b]) -> [a] -> [b]
-concatMap' = undefined 
+concatMap' _ [] = []
+concatMap' f (x : xs) =   f x ++ concatMap' f xs
+
 
 positions :: (a -> Bool) -> [a] -> [Int]
-positions = undefined 
+positions = helper 0
+            where helper _ _ [] = []
+                  helper n f (h : tl) =  let xs = helper (n + 1) f tl in if f h then n : xs else xs       
 
 main = do
   runTests
