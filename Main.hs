@@ -41,21 +41,22 @@ instance Eq Expr where
   _ == _ = False
 
 
-data Error = OutOfPossibleValuesError Operator1 Double | ZeroDivisionError Double | IncorrectDegreeOfValue
+data Error = OutOfPossibleValuesError Operator1 Double | ZeroDivisionError Double | IncorrectDegreeOfValue Double
 
 instance Show Error where
   show (OutOfPossibleValuesError op value) = "OutOfPossibleValuesError: operator "
    ++ (show op) ++ " can not handle expression " ++ (show value)
   show (ZeroDivisionError chislitel) = "ZeroDivisionError: numerator "
    ++ (show chislitel) ++ " can not be divided by 0"
-  show IncorrectDegreeOfValue = "IncorrectDegreeOfValue: value 0 in 0 degree does not exist"
+  show (IncorrectDegreeOfValue value) = "IncorrectDegreeOfValue: value 0 in "
+   ++ (show value) ++ " degree does not exist"
 
 instance Eq Error where
   OutOfPossibleValuesError op1 value1 == OutOfPossibleValuesError op2 value2 =
    op1 == op2 && value1 == value2
   ZeroDivisionError chislitel1 == ZeroDivisionError chislitel2 =
    chislitel1 == chislitel2
-  IncorrectDegreeOfValue == IncorrectDegreeOfValue = True
+  IncorrectDegreeOfValue value1 == IncorrectDegreeOfValue value2 = value1 == value2
   _ == _ = False
 
 
@@ -85,7 +86,7 @@ eval (CE expr1 op expr2) = case (eval expr1) of
     Right result2 -> case (op) of
       Div -> if (result2 /= 0) then Right (defineOperationEvaluator op result1 result2)
        else Left (ZeroDivisionError result1)
-      In -> if (result1 == 0 && result2 == 0) then Left IncorrectDegreeOfValue
+      In -> if (result1 == 0 && result2 < 0) then Left (IncorrectDegreeOfValue result2)
        else Right (defineOperationEvaluator op result1 result2)
       _ -> Right (defineOperationEvaluator op result1 result2)
     Left exception -> Left exception
@@ -121,12 +122,13 @@ cases = [
  (CE (Arg 2) In (Arg 3), Right 8),
  (CE (Arg 0) In (Arg 2), Right 0),
  (CE (Arg 5) In (Arg 0), Right 1),
+ (CE (Arg 0) In (Arg 0), Right 1),
  -- Simple binary expression with division by zero = ZeroDivisionError
  (CE (Arg 6) Div (Arg 0), Left (ZeroDivisionError 6)),
  (CE (Arg 0) Div (Arg 0), Left (ZeroDivisionError 0)),
  (CE (Arg 4) Plus (CE (Arg 5) Min (Arg 6)), Right 3),
  -- Simple binary expression with zero-degree = IncorrectDegreeOfValue
- (CE (Arg 0) In (Arg 0), Left IncorrectDegreeOfValue),
+ (CE (Arg 0) In (Arg (-5)), Left (IncorrectDegreeOfValue (-5))),
  -- Complex expressions = Double
  (CE (CE (Arg 5) Min (Arg 6)) Plus (Arg 4), Right 3),
  (CE (Marg Neg (Arg 7)) Min (Marg Neg (Arg 3)), Right (-4)),
