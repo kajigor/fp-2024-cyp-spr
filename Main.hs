@@ -3,7 +3,7 @@ module Main where
 import Text.Printf (printf)
 import Control.Monad (unless)
 
-
+-- Type for unary operator
 data Operator1 = Sqrt | Neg
 
 instance Show Operator1 where
@@ -17,6 +17,7 @@ instance Eq Operator1 where
   Sqrt == Neg = False
 
 
+-- Type for binary operator
 data Operator2 = Div | Mul | Plus | Min deriving (Eq)
 
 instance Show Operator2 where
@@ -26,6 +27,7 @@ instance Show Operator2 where
   show Min = "-"
 
 
+-- Type for expression
 data Expr = Arg Double | Marg Operator1 Expr | CE Expr Operator2 Expr
 
 instance Show Expr where
@@ -37,8 +39,10 @@ instance Show Expr where
 
 instance Eq Expr where
   Arg value1 == Arg value2 = value1 == value2
-  Marg op1 value1 == Marg op2 value2 = op1 == op2 && value1 == value2
-  CE expr11 op1 expr12 == CE expr21 op2 expr22 = expr11 == expr21 && op1 == op2 && expr12 == expr22
+  Marg op1 value1 == Marg op2 value2 =
+   op1 == op2 && value1 == value2
+  CE expr11 op1 expr12 == CE expr21 op2 expr22 =
+   expr11 == expr21 && op1 == op2 && expr12 == expr22
   Arg value1 == Marg op value2 = False
   Marg op value2 == Arg value1 = False
   Arg value1 == CE expr1 op expr2 = False
@@ -50,12 +54,16 @@ instance Eq Expr where
 data Error = OutOfPossibleValuesError Operator1 Double | ZeroDivisionError Double Double
 
 instance Show Error where
-  show (OutOfPossibleValuesError op value) = "OutOfPossibleValuesError: operator " ++ (show op) ++ " can not handle expression " ++ (show value)
-  show (ZeroDivisionError chislitel znamenatel) = "ZeroDivisionError: numerator " ++ (show chislitel) ++ " can not be divided by denominator " ++ (show znamenatel)
+  show (OutOfPossibleValuesError op value) = "OutOfPossibleValuesError: operator "
+   ++ (show op) ++ " can not handle expression " ++ (show value)
+  show (ZeroDivisionError chislitel znamenatel) = "ZeroDivisionError: numerator "
+   ++ (show chislitel) ++ " can not be divided by denominator " ++ (show znamenatel)
 
 instance Eq Error where
-  OutOfPossibleValuesError op1 value1 == OutOfPossibleValuesError op2 value2 = op1 == op2 && value1 == value2
-  ZeroDivisionError chislitel1 znamenatel1 == ZeroDivisionError chislitel2 znamenatel2 = chislitel1 == chislitel2 && znamenatel1 == znamenatel2
+  OutOfPossibleValuesError op1 value1 == OutOfPossibleValuesError op2 value2 =
+   op1 == op2 && value1 == value2
+  ZeroDivisionError chislitel1 znamenatel1 == ZeroDivisionError chislitel2 znamenatel2 =
+   chislitel1 == chislitel2 && znamenatel1 == znamenatel2
   ZeroDivisionError chislitel znamenatel == OutOfPossibleValuesError op expr = False
   OutOfPossibleValuesError op value == ZeroDivisionError chislitel znamenatel = False
 
@@ -75,13 +83,15 @@ eval (Marg Neg expr) = case (eval expr) of
   Left exception -> Left exception
 
 eval (Marg Sqrt expr) = case (eval expr) of
-  Right result -> if (result >= 0) then Right (result**0.5) else Left (OutOfPossibleValuesError Sqrt result)
+  Right result -> if (result >= 0) then Right (result**0.5)
+   else Left (OutOfPossibleValuesError Sqrt result)
   Left exception -> Left exception
 
 eval (CE expr1 op expr2) = case (eval expr1) of
   Right result1 -> case (eval expr2) of
     Right result2 -> case (op) of
-      Div -> if (result2 /= 0) then Right (defineOperationEvaluator op result1 result2) else Left (ZeroDivisionError result1 result2)
+      Div -> if (result2 /= 0) then Right (defineOperationEvaluator op result1 result2)
+       else Left (ZeroDivisionError result1 result2)
       _ -> Right (defineOperationEvaluator op result1 result2)
     Left exception -> Left exception
   Left exception -> Left exception
