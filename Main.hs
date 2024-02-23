@@ -59,10 +59,6 @@ eval e = case e of
                     (Left er, _) -> Left er
                     (_, Left er) -> Left er
 
-x = Pow (Div (Mult (Minus (Pow (SquareRoot (Const 25)) (Const 2)) (Mult (Const 4) (Const 7))) (Const 2)) (Const 5)) (Const 3)
-
-
-
 cases :: [(Expr, Either Error Double)]
 cases = [ 
         (Const 777, Right 777),
