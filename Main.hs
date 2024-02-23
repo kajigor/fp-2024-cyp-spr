@@ -13,11 +13,13 @@ ageOn planet ageInSeconds
     | planet == "Jupiter" = ans / 11.862615
     | planet == "Mars"    = ans / 1.8808158
     | planet == "Venus"   = ans / 0.61519726
-    | otherwise = undefined
+    | otherwise = error $ "Unknown planet: " ++ planet
     where ans = ageInSeconds / 31557600
 
 isLeapYear :: Int -> Bool
-isLeapYear year = (mod year 400 == 0) || ((mod year 4 == 0) && (mod year 100 /= 0))
+isLeapYear year 
+    | year >= 0 = (mod year 400 == 0) || ((mod year 4 == 0) && (mod year 100 /= 0))
+    | otherwise = error "Year have to be non negative"
 
 main = do 
   runTests
