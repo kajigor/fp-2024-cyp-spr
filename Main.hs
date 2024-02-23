@@ -4,27 +4,22 @@ import Text.Printf (printf)
 import Control.Monad (unless)
 
 -- Type for unary operator
-data Operator1 = Sqrt | Neg
+data Operator1 = Sqrt | Neg deriving (Eq)
 
 instance Show Operator1 where
   show Sqrt = "√"
   show Neg = "-"
 
-instance Eq Operator1 where
-  Sqrt == Sqrt = True
-  Neg == Neg = True
-  Neg == Sqrt = False
-  Sqrt == Neg = False
-
 
 -- Type for binary operator
-data Operator2 = Div | Mul | Plus | Min deriving (Eq)
+data Operator2 = Div | Mul | Plus | Min | In deriving (Eq)
 
 instance Show Operator2 where
   show Div = "/"
   show Mul = "*"
   show Plus = "+"
   show Min = "-"
+  show In = "^"
 
 
 -- Type for expression
@@ -43,29 +38,25 @@ instance Eq Expr where
    op1 == op2 && value1 == value2
   CE expr11 op1 expr12 == CE expr21 op2 expr22 =
    expr11 == expr21 && op1 == op2 && expr12 == expr22
-  Arg value1 == Marg op value2 = False
-  Marg op value2 == Arg value1 = False
-  Arg value1 == CE expr1 op expr2 = False
-  CE expr1 op expr2 == Arg value1 = False
-  Marg op1 value2 == CE expr1 op2 expr2 = False
-  CE expr1 op2 expr2 == Marg op1 value2 = False
+  _ == _ = False
 
 
-data Error = OutOfPossibleValuesError Operator1 Double | ZeroDivisionError Double Double
+data Error = OutOfPossibleValuesError Operator1 Double | ZeroDivisionError Double | IncorrectDegreeOfValue
 
 instance Show Error where
   show (OutOfPossibleValuesError op value) = "OutOfPossibleValuesError: operator "
    ++ (show op) ++ " can not handle expression " ++ (show value)
-  show (ZeroDivisionError chislitel znamenatel) = "ZeroDivisionError: numerator "
-   ++ (show chislitel) ++ " can not be divided by denominator " ++ (show znamenatel)
+  show (ZeroDivisionError chislitel) = "ZeroDivisionError: numerator "
+   ++ (show chislitel) ++ " can not be divided by 0"
+  show IncorrectDegreeOfValue = "IncorrectDegreeOfValue: value 0 in 0 degree does not exist"
 
 instance Eq Error where
   OutOfPossibleValuesError op1 value1 == OutOfPossibleValuesError op2 value2 =
    op1 == op2 && value1 == value2
-  ZeroDivisionError chislitel1 znamenatel1 == ZeroDivisionError chislitel2 znamenatel2 =
-   chislitel1 == chislitel2 && znamenatel1 == znamenatel2
-  ZeroDivisionError chislitel znamenatel == OutOfPossibleValuesError op expr = False
-  OutOfPossibleValuesError op value == ZeroDivisionError chislitel znamenatel = False
+  ZeroDivisionError chislitel1 == ZeroDivisionError chislitel2 =
+   chislitel1 == chislitel2
+  IncorrectDegreeOfValue == IncorrectDegreeOfValue = True
+  _ == _ = False
 
 
 defineOperationEvaluator :: Operator2 -> (Double -> Double -> Double)
@@ -74,6 +65,8 @@ defineOperationEvaluator op
   | op == Mul = (*)
   | op == Plus = (+)
   | op == Min = (-)
+  | op == In = (**)
+
 
 eval :: Expr -> Either Error Double
 eval (Arg value) = Right value
@@ -91,7 +84,9 @@ eval (CE expr1 op expr2) = case (eval expr1) of
   Right result1 -> case (eval expr2) of
     Right result2 -> case (op) of
       Div -> if (result2 /= 0) then Right (defineOperationEvaluator op result1 result2)
-       else Left (ZeroDivisionError result1 result2)
+       else Left (ZeroDivisionError result1)
+      In -> if (result1 == 0 && result2 == 0) then Left IncorrectDegreeOfValue
+       else Right (defineOperationEvaluator op result1 result2)
       _ -> Right (defineOperationEvaluator op result1 result2)
     Left exception -> Left exception
   Left exception -> Left exception
@@ -123,17 +118,22 @@ cases = [
  (CE (Arg (-5)) Div (Arg 2), Right (-2.5)),
  (CE (Arg (-5)) Div (Marg Neg (Arg 2)), Right 2.5),
  (CE (Arg 0) Div (Arg 2), Right 0),
- -- Simple binary login with division by zero = ZeroDivisionError
- (CE (Arg 6) Div (Arg 0), Left (ZeroDivisionError 6 0)),
- (CE (Arg 0) Div (Arg 0), Left (ZeroDivisionError 0 0)),
+ (CE (Arg 2) In (Arg 3), Right 8),
+ (CE (Arg 0) In (Arg 2), Right 0),
+ (CE (Arg 5) In (Arg 0), Right 1),
+ -- Simple binary expression with division by zero = ZeroDivisionError
+ (CE (Arg 6) Div (Arg 0), Left (ZeroDivisionError 6)),
+ (CE (Arg 0) Div (Arg 0), Left (ZeroDivisionError 0)),
  (CE (Arg 4) Plus (CE (Arg 5) Min (Arg 6)), Right 3),
+ -- Simple binary expression with zero-degree = IncorrectDegreeOfValue
+ (CE (Arg 0) In (Arg 0), Left IncorrectDegreeOfValue),
  -- Complex expressions = Double
  (CE (CE (Arg 5) Min (Arg 6)) Plus (Arg 4), Right 3),
  (CE (Marg Neg (Arg 7)) Min (Marg Neg (Arg 3)), Right (-4)),
  (CE (CE (Arg 2) Mul (Marg Sqrt (Arg 9))) Plus (CE (Arg 0) Plus (Marg Neg (Arg 5))), Right 1),
  -- Complex expression with error in sub-expression = Exception of first sub expression Error
  (CE (CE (Arg 2) Mul (Marg Sqrt (Arg (-9)))) Plus (CE (Arg 0) Plus (Marg Neg (Arg 5))), Left (OutOfPossibleValuesError Sqrt (-9))),
- (CE (CE (Arg 2) Mul (Marg Sqrt (Arg (9)))) Plus (CE (Arg 2) Div (Marg Neg (Arg 0))), Left (ZeroDivisionError 2 0)),
+ (CE (CE (Arg 2) Mul (Marg Sqrt (Arg (9)))) Plus (CE (Arg 2) Div (Marg Neg (Arg 0))), Left (ZeroDivisionError 2)),
  (CE (CE (Arg 2) Mul (Marg Sqrt (Arg (-9)))) Plus (CE (Arg 2) Div (Marg Neg (Arg 0))), Left (OutOfPossibleValuesError Sqrt (-9)))
  ]
 
