@@ -26,7 +26,7 @@ instance Show Operator2 where
   show Min = "-"
 
 
-data Expr = Arg Double | Marg Operator1 Double | CE Expr Operator2 Expr
+data Expr = Arg Double | Marg Operator1 Expr | CE Expr Operator2 Expr
 
 instance Show Expr where
   show (Arg value) = show value
@@ -40,17 +40,25 @@ instance Eq Expr where
   Marg op1 value1 == Marg op2 value2 = op1 == op2 && value1 == value2
   CE expr11 op1 expr12 == CE expr21 op2 expr22 = expr11 == expr21 && op1 == op2 && expr12 == expr22
   Arg value1 == Marg op value2 = False
+  Marg op value2 == Arg value1 = False
   Arg value1 == CE expr1 op expr2 = False
+  CE expr1 op expr2 == Arg value1 = False
   Marg op1 value2 == CE expr1 op2 expr2 = False
---
---data Error
---
---instance Show Error where
---  show = undefined
---
---instance Eq Error where
---  (==) = undefined
---
+  CE expr1 op2 expr2 == Marg op1 value2 = False
+
+
+data Error = OutOfPossibleValuesError Operator1 Expr | ZeroDivisionError Expr Expr
+
+instance Show Error where
+  show (OutOfPossibleValuesError op expr) = "OutOfPossibleValuesError: operator " ++ (show op) ++ " can not handle expression " ++ (show expr)
+  show (ZeroDivisionError chislitel znamenatel) = "ZeroDivisionError: numerator " ++ (show chislitel) ++ " can not be divided by denominator " ++ (show znamenatel)
+
+instance Eq Error where
+  OutOfPossibleValuesError op1 expr1 == OutOfPossibleValuesError op2 expr2 = op1 == op2 && expr1 == expr2
+  ZeroDivisionError chislitel1 znamenatel1 == ZeroDivisionError chislitel2 znamenatel2 = chislitel1 == chislitel2 && znamenatel1 == znamenatel2
+  ZeroDivisionError chislitel znamenatel == OutOfPossibleValuesError op expr = False
+  OutOfPossibleValuesError op expr == ZeroDivisionError chislitel znamenatel = False
+
 --eval :: Expr -> Either Error Double
 --eval = undefined
 --
