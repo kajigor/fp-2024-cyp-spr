@@ -5,36 +5,26 @@ import Control.Monad (unless)
 
 data BinOperator = Plus | Minus | Multiply | Divide | Power deriving (Eq)
 instance Show BinOperator where
-  show (Plus) = printf "+"
-  show (Minus) = printf "-"
-  show (Multiply) = printf "*"
-  show (Divide) = printf "/"
-  show (Power) = printf "^"
+  show Plus = "+"
+  show Minus = "-"
+  show Multiply = "*"
+  show Divide = "/"
+  show Power = "^"
 
-data Expr = Number Double | SquareRoot Expr | BinExpr BinOperator Expr Expr 
+data Expr = Number Double | SquareRoot Expr | BinExpr BinOperator Expr Expr deriving Eq
 
 instance Show Expr where 
   show (Number n) = show n 
   show (SquareRoot exp) = printf "(square root of %s)"  (show exp)
   show (BinExpr binOp leftExp rightExp) = printf "(%s %s %s)" (show leftExp) (show binOp) (show rightExp)
-
-instance Eq Expr where 
-  Number n == Number n1 = n == n1
-  SquareRoot exp == SquareRoot exp1 = exp == exp1
-  BinExpr binOp leftExp rightExp == BinExpr binOp1 leftExp1 rightExp1 = (binOp == binOp1) && (leftExp == leftExp1) && (rightExp == rightExp1)
-  _ == _ = False
    
 
-data Error = DivisionByZero | SquareRootOfNegative
+data Error = DivisionByZero | SquareRootOfNegative deriving Eq
 
 instance Show Error where 
   show (DivisionByZero) = printf "Division by zero"
   show (SquareRootOfNegative) = printf "Square root of negative number"
 
-instance Eq Error where 
-  DivisionByZero == DivisionByZero = True
-  SquareRootOfNegative == SquareRootOfNegative = True 
-  _ == _ = False
 
 eval :: Expr -> Either Error Double 
 eval (Number n) = Right n
