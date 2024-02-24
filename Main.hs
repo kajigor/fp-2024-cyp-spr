@@ -54,12 +54,12 @@ checkDivisorIsZero _ b = case b of
   Left err -> Just err
 
 
-checkBaseIsNegative :: Error -> Either Error Double -> Either Error Double -> Maybe Error
-checkBaseIsNegative err (Right x) _
+checkFirstArgIsNegative :: Error -> Either Error Double -> Either Error Double -> Maybe Error
+checkFirstArgIsNegative err (Right x) _
   | x < 0 = Just err
   | otherwise = Nothing
   
-checkBaseIsNegative err a _ = Just (fromLeft err a)
+checkFirstArgIsNegative err a _ = Just (fromLeft err a)
 
 
 eval :: Expr -> Either Error Double
@@ -69,8 +69,8 @@ eval expr = case expr of
   Subtract a b -> performOp (-) (eval a) (eval b)
   Multiply a b -> performOp (*) (eval a) (eval b)
   Divide a b -> performOpWithCheck checkDivisorIsZero (/) (eval a) (eval b)
-  Power a b -> performOpWithCheck (checkBaseIsNegative PowerBaseIsNegative) (**) (eval a) (eval b)
-  Square a -> performOpWithCheck (checkBaseIsNegative SquareRootIsNegative) (**) (eval a) (Right 0.5)
+  Power a b -> performOpWithCheck (checkFirstArgIsNegative PowerBaseIsNegative) (**) (eval a) (eval b)
+  Square a -> performOpWithCheck (checkFirstArgIsNegative SquareRootIsNegative) (**) (eval a) (Right 0.5)
 
 cases :: [(Expr, Either Error Double)]
 cases = [
