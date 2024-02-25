@@ -14,7 +14,7 @@ instance Show Expr where
   show (Subtract x y) = "(" ++ show x ++ " - " ++ show y ++ ")"
   show (Multiply x y) = "(" ++ show x ++ " * " ++ show y ++ ")"
   show (Divide x y) = "(" ++ show x ++ " / " ++ show y ++ ")"
-  show (Power x y) = "(" ++ show x ++ ")" ++  " ^ " ++ "(" ++ show y ++ ")"
+  show (Power x y) = show x ++ " ^ " ++ show y
   show (Square x) = "sqrt(" ++ show x ++ ")"
 
 
