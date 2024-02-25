@@ -52,11 +52,17 @@ eval ((:/) x y) =
 eval ((:^) x y) =
   case checkErrors (eval x, eval y) of
     Left err -> Left err
-    Right (xEval, yEval) -> if (yEval > 0) then Right (xEval ** yEval) else Left (Error "power used with non-positive base")
+    Right (xEval, yEval) -> if (xEval > 0) then Right (xEval ** yEval) else Left (Error "power used with non-positive base")
 
 
 cases :: [(Expr, Either Error Double)]
-cases = []
+cases = [(Expr 1.0, Right 1.0) --base
+  ,(Sq (Expr 4.0), Right 2.0) --Sq
+  ,(Expr 1.0 :+ Sq (Expr (-4.0)), Left (Error "sqrt from negative taken")) --base Error
+  ,((Expr 2.0 :^ Expr 3.0) :+ ((Expr 2.0 :* Expr 3.0) :- (Expr 4.0 :/ Expr 1.0)), Right 10.0) --base operations
+  ,((Expr 1.0 :/ Expr 0.0) :+ Sq (Expr (-1.0)), Left (Error "divided by zero")) --multiple errors
+  ,(Expr (-1.0) :^ Expr 3.0, Left (Error "power used with non-positive base")) --negative base error
+  ,(Expr (0.0) :^ Expr (-3.0), Left (Error "power used with non-positive base"))] --zero base error
 
 test :: Expr -> Either Error Double -> IO ()
 test expr expected =
