@@ -3,52 +3,71 @@ module Main where
 import Text.Printf (printf)
 import Control.Monad (unless)
 
-data Expr = Number Double | Sqrt Expr | InfNoFail String (Double -> Double -> Double) Expr Expr | Div Expr Expr | Exp Expr Expr
+data BinOp = Plus | Minus | Mult | Div | Exp deriving (Eq)
+instance Show BinOp where
+  show Plus  = "+"
+  show Minus = "-"
+  show Mult  = "*"
+  show Div   = "/"
+  show Exp   = "^"
 
-instance Show Expr where 
+data FunOpUn = Sqrt deriving (Eq)
+instance Show FunOpUn where
+  show Sqrt = "sqrt"
+
+data Expr = Number Double | Binary BinOp Expr Expr | UnaryFun FunOpUn Expr deriving (Eq)
+instance Show Expr where
   show (Number x) = show x
-  show (Sqrt exp) = "sqrt(" ++ show exp ++ ")"
-  show (InfNoFail name _ exp1 exp2) = "(" ++ show exp1 ++ name ++ show exp2 ++ ")"
-  show (Div exp1 exp2) = "(" ++ show exp1 ++ "/" ++ show exp2 ++ ")"
-  show (Exp exp1 exp2) = "(" ++ show exp1 ++ "^" ++ show exp2 ++ ")"
+  show (Binary op lhs rhs) = '(' : show lhs ++ show op ++ show rhs ++ ")"
+  show (UnaryFun fun arg) = show fun ++ "(" ++ show arg ++ ")"
 
-instance Eq Expr where 
-  (==) (Number a) (Number b) = a == b
-  (==) (Sqrt exp1) (Sqrt exp2) = exp1 == exp2
-  (==) (InfNoFail opName1 _ exp1l exp1r) (InfNoFail opName2 _ exp2l exp2r) = (opName1, exp1l, exp1r) == (opName2, exp2l, exp2r)
-  (==) (Div exp1l exp1r) (Div exp2l exp2r) = (exp1l, exp1r) == (exp2l, exp2r)
-  (==) (Exp e1l e1r) (Exp e2l e2r) = (e1l, e1r) == (e2l, e2r)
-  (==) _ _ = False
-
-data Error = DivByZero | NegExponent | NegSqrt
+data Error = DivByZero | NegExponent | NegSqrt deriving (Eq)
 
 instance Show Error where 
   show DivByZero = "Division by zero"
-  show NegExponent = "Trying to use negative exponent"
+  show NegExponent = "Trying to exponentiate negative value"
   show NegSqrt = "Trying to take a square root of a negative number"
 
--- deriving instance Eq => Eq (Error)   =(
+getFun :: BinOp -> (Double -> Double -> Double)
+getFun Plus   = (+)
+getFun Minus  = (-)
+getFun Mult   = (*)
+getFun Div    = (/)
+getFun Exp    = (**)
 
-instance Eq Error where 
-  (==) DivByZero DivByZero = True
-  (==) NegExponent NegExponent = True
-  (==) NegSqrt NegSqrt = True
-  (==) _ _ = False
+evalBinOp :: BinOp -> Either Error Double -> Either Error Double -> Either Error Double
+evalBinOp _ (Left e) _ = Left e
+evalBinOp _ _ (Left e) = Left e
+evalBinOp op@Div (Right lhs) (Right rhs)  = if (rhs == 0) then Left DivByZero else Right $ getFun op lhs rhs
+evalBinOp op@Exp (Right lhs) (Right rhs)  = if (lhs < 0)  then Left NegExponent else Right $ getFun op lhs rhs
+evalBinOp op (Right lhs) (Right rhs)      = Right $ getFun op lhs rhs
+
+evalFunUn :: FunOpUn -> Either Error Double -> Either Error Double
+evalFunUn _ (Left e) = Left e
+evalFunUn Sqrt (Right arg) = if (arg < 0) then Left NegSqrt else Right $ sqrt arg
 
 eval :: Expr -> Either Error Double 
 eval (Number x) = Right x
-eval (Sqrt exp1) = if (res1 < 0.0) then Left NegExponent else Right sqrt res1
-  where res1 = eval exp1
-eval (InfNoFail _ f exp1 exp2) = Right f (eval exp1) (eval exp2)
-eval (Div exp1 exp2) = if (res2 == 0.0) then Left DivByZero else Right res1 / res2
-  where res1 = eval exp1
-        res2 = eval exp2
-eval (Exp exp1 exp2) = if (res2 < 0) then Left NegExponent else Right (res1 ^ res2)
-  where res1 = eval exp1
-        res2 = eval exp2
+eval (Binary op lhs rhs) = evalBinOp op (eval lhs) (eval rhs)
+eval (UnaryFun fun arg)  = evalFunUn fun (eval arg)
 
 cases :: [(Expr, Either Error Double)]
-cases = [(Number 1.0, Right 1.0)]
+cases = [(Number 1.0, Right 1.0),
+         (Number 0.0, Right 0.0),
+         (Number 3, Right 3.0),
+         (Number 1e300, Right 1e300),
+         (Binary Plus (Number 2) (Number 5), Right 7.0),
+         (Binary Minus (Number 5) (Number 7), Right (-2.0)),
+         (Binary Mult (Number 7.0) (Number 3), Right 21.0),
+         (Binary Div (Number 27) (Number 3), Right 9.0),
+         (Binary Div (Number 3) (Number 2), Right 1.5),
+         (Binary Div (Number 4) (Number 0), Left DivByZero),
+         (Binary Exp (Number 2) (Number 4), Right 16.0),
+         (Binary Exp (Number (-2.7)) (Number 1.5), Left NegExponent),
+         (UnaryFun Sqrt (Number 81.0), Right 9.0),
+         (UnaryFun Sqrt (Number (-1.0)), Left NegSqrt),
+         (Binary Plus (Number 2) (Binary Mult (Number 2) (Number 2)), Right 6.0),
+         (Binary Div (Number 4) (Binary Minus (Number 2) (Number 2)), Left DivByZero)]
 
 test :: Expr -> Either Error Double -> IO () 
 test expr expected = 
@@ -62,4 +81,5 @@ test expr expected =
 main :: IO () 
 main = do 
   mapM_ (uncurry test) cases 
+  putStrLn "Done"
   
