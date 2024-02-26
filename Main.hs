@@ -27,33 +27,23 @@ checkErrors ((Left x), _) = Left x
 checkErrors (_, (Left y)) = Left y
 checkErrors (Right x, Right y) = Right (x, y)
 
+computeOrError :: (Double -> Double -> Double) -> (Double -> Double -> Bool) -> String -> (Expr, Expr) -> Either Error Double
+computeOrError f predicate errorMsg (expA, expB) =
+  case checkErrors (eval expA, eval expB) of
+    Left err -> Left err
+    Right (x, y) -> if predicate x y then Right (f x y) else Left (Error errorMsg)
+
+alwaysCorrect :: Double -> Double -> Bool
+alwaysCorrect = \a b -> True
+
 eval :: Expr -> Either Error Double
 eval (Expr x) = Right x
-eval (Sq x) =
-  case eval x of
-    Left err -> Left err
-    Right exp -> if (exp >= 0) then Right (sqrt exp) else Left (Error "sqrt from negative taken")
-eval ((:+) x y) =
-  case checkErrors (eval x, eval y) of
-    Left err -> Left err
-    Right (xEval, yEval) -> Right (xEval + yEval)
-eval ((:-) x y) =
-  case checkErrors (eval x, eval y) of
-    Left err -> Left err
-    Right (xEval, yEval) -> Right (xEval - yEval)
-eval ((:*) x y) =
-  case checkErrors (eval x, eval y) of
-    Left err -> Left err
-    Right (xEval, yEval) -> Right (xEval * yEval)
-eval ((:/) x y) =
-  case checkErrors (eval x, eval y) of
-    Left err -> Left err
-    Right (xEval, yEval) -> if (yEval /= 0) then Right (xEval / yEval) else Left (Error "divided by zero")
-eval ((:^) x y) =
-  case checkErrors (eval x, eval y) of
-    Left err -> Left err
-    Right (xEval, yEval) -> if (xEval > 0) then Right (xEval ** yEval) else Left (Error "power used with non-positive base")
-
+eval (Sq x) = computeOrError (\val -> sqrt) (\val -> (<=) 0) "sqrt from negative taken" (x, x)
+eval ((:+) x y) = computeOrError (+) (alwaysCorrect) "" (x, y)
+eval ((:-) x y) = computeOrError (-) (alwaysCorrect) "" (x, y)
+eval ((:*) x y) = computeOrError (*) (alwaysCorrect) "" (x, y)
+eval ((:/) x y) = computeOrError (/) (\a -> (/=) 0) "divided by zero" (x, y)
+eval ((:^) x y) = computeOrError (**) (\a b -> (<) 0 a) "power used with non-positive base" (x, y)
 
 cases :: [(Expr, Either Error Double)]
 cases = [(Expr 1.0, Right 1.0) --base
