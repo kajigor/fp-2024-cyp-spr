@@ -10,6 +10,7 @@ data Expr = Num Double
             | Minus Expr Expr
             | Mult Expr Expr
             | Div Expr Expr
+            | Pow Expr Expr
             | Root Expr
 
 
@@ -19,6 +20,7 @@ instance Show Expr where
   show (Minus ex1 ex2) = "(" ++ show ex1 ++ " - " ++ show ex2 ++ ")"
   show (Mult ex1 ex2) = "(" ++ show ex1 ++ " * " ++ show ex2 ++ ")"
   show (Div ex1 ex2) = "(" ++ show ex1 ++ " / " ++ show ex2 ++ ")"
+  show (Pow ex1 ex2) = "(" ++ show ex1 ++ " ** " ++ show ex2 ++ ")" 
   show (Root ex) = "(" ++ "root " ++ show ex ++ ")"
 
 
@@ -28,20 +30,27 @@ instance Eq Expr where
   (==) (Plus a1 a2) (Plus b1 b2) = a1 == b1 && a2 == b2 
   (==) (Minus a1 a2) (Minus b1 b2) = a1 == b1 && a2 == b2 
   (==) (Mult a1 a2) (Mult b1 b2) = a1 == b1 && a2 == b2 
-  (==) (Div a1 a2) (Div b1 b2) = a1 == b1 && a2 == b2 
+  (==) (Div a1 a2) (Div b1 b2) = a1 == b1 && a2 == b2
+  (==) (Pow a1 a2) (Pow b1 b2) = a1 == b1 && a2 == b2 
   (==) _ _ = False
 
-data Error = DivideByZero String | NegativeFromRoot String | ComplexError Error Error
+data Error = DivideByZero String
+            | NegativeFromRoot String 
+            | PowNaN String 
+            | ComplexError Error Error
 
 instance Show Error where 
   show (DivideByZero msg) = "DivideByZero error " ++ show msg
   show (NegativeFromRoot msg) = "NegativeFromRoot error " ++ show msg
+  show (PowNaN msg) = "PowNaN error " ++ show msg
   show (ComplexError error1 error2) = "ComplexErrorOf " ++ show error1 ++ " and " ++ show error2
   
 
 instance Eq Error where 
   (==) (DivideByZero msg1) (DivideByZero msg2) = msg1 == msg2
   (==) (NegativeFromRoot msg1) (NegativeFromRoot msg2) = msg1 == msg2 
+  (==) (PowNaN msg1) (PowNaN msg2) = msg1 == msg2 
+  (==) _ _ = False
 
 andExprError :: (Expr -> Expr -> Expr) -> Either Expr Error -> Either Expr Error -> Either Expr Error -- priority for the errors, operands otherwise
 andExprError _ (Right error1) (Right error2) = Right (ComplexError error1 error2)
@@ -66,12 +75,17 @@ resolve (Left (Div (Num n1) (Num n2)))
   | n2 == 0 = Right (DivideByZero ("(div of " ++ show n1 ++ " and " ++ show n2 ++ ")"))
   | otherwise = Left $ Num (n1 / n2)
 
+resolve (Left (Pow (Num n1) (Num n2)))
+  | isNaN (n1 ** n2)= Right (PowNaN ("(pow of " ++ show n1 ++ " and " ++ show n2 ++ ")"))
+  | otherwise = Left (Num (n1 ** n2))
 
 resolve (Left (Root expr)) = resolve $ either (Left . Root) Right (resolve (Left expr)) -- propagate error and recursive Root if correct
 resolve (Left (Plus expr1 expr2)) = resolve $ andExprError Plus (resolve (Left expr1)) (resolve (Left expr2))
 resolve (Left (Minus expr1 expr2)) = resolve $ andExprError Minus (resolve (Left expr1)) (resolve (Left expr2))
 resolve (Left (Mult expr1 expr2)) = resolve $ andExprError Mult (resolve (Left expr1)) (resolve (Left expr2))
 resolve (Left (Div expr1 expr2)) = resolve $ andExprError Div (resolve (Left expr1)) (resolve (Left expr2))
+resolve (Left (Pow expr1 expr2)) = resolve $ andExprError Pow (resolve (Left expr1)) (resolve (Left expr2))
+
 
 exprToNum :: Expr -> Double
 exprToNum (Num n) = n
@@ -84,7 +98,8 @@ cases = [
     (Root $ Num 1, Right 1.0),
     (Plus (Root (Num 9)) (Minus (Num 2) (Num 7)), Right (-2.0)),
     (Root (Num (-1)), Left $ NegativeFromRoot "(root of -1.0)"),
-    (Div (Mult (Num 7.0) (Num 2.0)) (Minus (Num 4.0) (Num 4.0)), Left $ DivideByZero "(div of 14.0 and 0.0)") 
+    (Div (Mult (Num 7.0) (Num 2.0)) (Minus (Num 4.0) (Num 4.0)), Left $ DivideByZero "(div of 14.0 and 0.0)"),
+    (Div (Pow (Num (-1.0)) (Num 0.5)) (Root (Num 4.0)), Left $ PowNaN "(pow of -1.0 and 0.5)")
   ]
 
 test :: Expr -> Either Error Double -> IO () 
