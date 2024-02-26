@@ -8,7 +8,7 @@ import Data.List (sort, partition)
 
 quickSort :: [Int] -> [Int]
 quickSort [] = []
-quickSort (x:xs) = (quickSort less) ++ [x] ++ (quickSort greaterOrEqual)
+quickSort (x:xs) = (quickSort less) ++ x : (quickSort greaterOrEqual)
   where (less, greaterOrEqual) = partition (<x) xs
 
 map' :: (a -> b) -> [a] -> [b]
@@ -16,8 +16,10 @@ map' _ [] = []
 map' f (x:xs) = f x : map' f xs
 
 concatMap' :: (a -> [b]) -> [a] -> [b]
-concatMap' _ [] = []
-concatMap' f (x:xs) = (f x) ++ concatMap' f xs -- You can make it O(n), if you are ok with reversed order of each subarray
+concatMap' f xs = foldr (applyWithAppend f) [] xs
+  where
+  applyWithAppend :: (a -> [b]) ->  a -> [b] -> [b]
+  applyWithAppend f x acc = foldr (:) acc (f x)
 
 positions :: (a -> Bool) -> [a] -> [Int]
 positions pred arr = reverse $ positionsHelper [] 0 pred arr
