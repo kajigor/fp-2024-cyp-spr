@@ -68,39 +68,32 @@ instance Show Error where
   show (NegativeInPower expr) = "Evaluation error! Base of exponentiation '" ++ show expr ++ "' evaluated to " ++ showEvalResult (eval expr)
   show (ZeroInDivision expr) = "Evaluation error! Divisor '" ++ show expr ++ "' is evaluated to 0"
 
-extractError :: (Either Error Double, Either Error Double) -> Either Error Double
-extractError (Left err, _) = Left err
-extractError (_, Left err) = Left err
-extractError _ = Right 0
-
-evalPureBinary :: (Double -> Double -> Double) -> Expr -> Expr -> Either Error Double
-evalPureBinary op a b = case (eval a, eval b) of
-  (Right evalA, Right evalB) -> Right (op evalA evalB)
-  errorEvaluation -> extractError errorEvaluation
-
-evalDiv a b = case (eval a, eval b) of
-  (Right _, Right 0.0) -> Left (ZeroInDivision b)
-  (Right evalA, Right evalB) -> Right (evalA / evalB)
-  errorEvaluation -> extractError errorEvaluation
-
-evalPow a b = case (eval a, eval b) of
-  (Right evalA, Right evalB) | evalA <= 0 -> Left (NegativeInPower a)
-                             | otherwise -> Right (evalA ** evalB)
-  errorEvaluation -> extractError errorEvaluation
-
-evalSqr a = case eval a of
-  Right evalA | evalA < 0 -> Left (NegativeInSqrt a)
-              | otherwise -> Right (evalA ** 0.5)
-  errorEvaluation -> errorEvaluation
-
 eval :: Expr -> Either Error Double
-eval (Lit x) = Right x
-eval (Add a b) =  evalPureBinary (+) a b
-eval (Sub a b) = evalPureBinary (-) a b
-eval (Mul a b) = evalPureBinary (*) a b
-eval (Div a b) = evalDiv a b
-eval (Pow a b) = evalPow a b
-eval (Sqr a) = evalSqr a
+eval expr = case expr of
+  Lit x -> Right x
+  Add a b ->  evalPureBinary (+) a b
+  Sub a b -> evalPureBinary (-) a b
+  Mul a b -> evalPureBinary (*) a b
+  Div a b -> case (eval a, eval b) of
+    (Right _, Right 0.0) -> Left (ZeroInDivision b)
+    (Right evalA, Right evalB) -> Right (evalA / evalB)
+    errorEvaluation -> extractError errorEvaluation
+  Pow a b -> case (eval a, eval b) of
+    (Right evalA, Right evalB) | evalA <= 0 -> Left (NegativeInPower a)
+                               | otherwise -> Right (evalA ** evalB)
+    errorEvaluation -> extractError errorEvaluation
+  Sqr a -> case eval a of
+    Right evalA | evalA < 0 -> Left (NegativeInSqrt a)
+                | otherwise -> Right (evalA ** 0.5)
+    errorEvaluation -> errorEvaluation
+  where
+    extractError :: (Either Error Double, Either Error Double) -> Either Error Double
+    extractError (Left err, _) = Left err
+    extractError (_, Left err) = Left err
+    evalPureBinary :: (Double -> Double -> Double) -> Expr -> Expr -> Either Error Double
+    evalPureBinary op a b = case (eval a, eval b) of
+      (Right evalA, Right evalB) -> Right (op evalA evalB)
+      errorEvaluation -> extractError errorEvaluation
 
 cases :: [(Expr, Either Error Double)]
 cases = [ (four, Right 4.0), (sum, Right 9.0), (diff, Right (-1.0))
