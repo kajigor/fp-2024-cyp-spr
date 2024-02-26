@@ -16,12 +16,12 @@ data Expr = Const Double
 instance Show Expr where 
   show e = case e of
           (Const c)       -> show c
-          (SquareRoot e)  -> printf "sqrt(%s)" (show e)
-          (Plus e1 e2)    -> printf "(%s)" $ show e1 ++ "+" ++ show e2
-          (Minus e1 e2)   -> printf "(%s)" $ show e1 ++ "-" ++ show e2
-          (Mult e1 e2)    -> printf "(%s)" $ show e1 ++ "*" ++ show e2
-          (Div e1 e2)     -> printf "(%s)" $ show e1 ++ "/" ++ show e2
-          (Pow e1 e2)     -> printf "(%s)" $ show e1 ++ "^" ++ show e2
+          (SquareRoot e1)  -> printf "sqrt(%s)" (show e1)
+          (Plus e1 e2)    -> printf "(%s %s %s)" (show e1) "+" (show e2)
+          (Minus e1 e2)   -> printf "(%s %s %s)" (show e1) "-" (show e2)
+          (Mult e1 e2)    -> printf "(%s %s %s)" (show e1) "*" (show e2)
+          (Div e1 e2)     -> printf "(%s %s %s)" (show e1) "/" (show e2)
+          (Pow e1 e2)     -> printf "(%s %s %s)" (show e1) "^" (show e2)
 
 data Error  = DivisionByZero Expr Expr | RootOfNegative Expr
             deriving Eq
