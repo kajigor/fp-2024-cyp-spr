@@ -64,21 +64,22 @@ applyOp op x y = Right (opToFun op x y)
 cases :: [(Expr, Either Error Double)]
 cases = [
   (Number 10, Right 10),
-  (Number (-5), Right (-5)),
+  (Number $ -5, Right $ -5),
   (Root (Number 16), Right 4),
-  (Root (Number (-9)), Left NegRoot),
+  (Root (Number $ -9), Left NegRoot),
   (BinOp (Number 5) (Number 3) Plus, Right 8),
   (BinOp (Number 7) (Number 2) Minus, Right 5),
   (BinOp (Number 2) (Number 4) Mul, Right 8),
   (BinOp (Number 10) (Number 2) Div, Right 5),
   (BinOp (Number 10) (Number 0) Div, Left ZeroDiv),
   (BinOp (Number 2) (Number 3) Pow, Right 8),
+  (BinOp (Number $ -2) (Number $ 1 / 2) Pow, Left NegRoot),
   (
     BinOp (Root (Number 64)) (Number 2) Plus,
     Right 10
   ),
   (
-    BinOp (Root (Number (-9))) (Number 3) Mul,
+    BinOp (Root (Number $ -9)) (Number 3) Mul,
     Left NegRoot
   ),
   (
