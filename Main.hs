@@ -50,14 +50,16 @@ eval (BinOp x y op) =
 
 applyOp :: Operation -> Double -> Double -> Either Error Double
 applyOp Div x y
-  | y /= 0 = Right (x / y)
-  | otherwise = Left ZeroDiv
+  | y == 0 = Left ZeroDiv
+  | otherwise = Right (x / y)
+applyOp Pow x y
+  | isNaN (x ** y) = Left NegRoot
+  | otherwise = Right (x ** y)
 applyOp op x y = Right (opToFun op x y)
   where opToFun :: Operation -> Double -> Double -> Double
         opToFun Plus = (+)
         opToFun Minus = (-)
         opToFun Mul = (*)
-        opToFun Pow = (**)
 
 cases :: [(Expr, Either Error Double)]
 cases = [
