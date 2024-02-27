@@ -19,7 +19,7 @@ data Expr =
 instance Show Expr where
   show (Number x) = show x
   show (Root x) = "√(" ++ show x ++ ")"
-  show (BinOp e1 e2 op) = show e1 ++ " " ++ show op ++ " " ++ show e2
+  show (BinOp e1 e2 op) = "(" ++ show e1 ++ " " ++ show op ++ " " ++ show e2 ++ ")"
 
 
 instance Eq Expr where
@@ -48,17 +48,16 @@ eval (BinOp x y op) =
     Left err -> Left err
 
 
-opToFun :: Operation -> Double -> Double -> Double
-opToFun Plus = (+)
-opToFun Minus = (-)
-opToFun Mul = (*)
-opToFun Pow = (**)
-
 applyOp :: Operation -> Double -> Double -> Either Error Double
 applyOp Div x y
   | y /= 0 = Right (x / y)
   | otherwise = Left ZeroDiv
 applyOp op x y = Right (opToFun op x y)
+  where opToFun :: Operation -> Double -> Double -> Double
+        opToFun Plus = (+)
+        opToFun Minus = (-)
+        opToFun Mul = (*)
+        opToFun Pow = (**)
 
 cases :: [(Expr, Either Error Double)]
 cases = [
