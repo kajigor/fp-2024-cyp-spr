@@ -79,6 +79,7 @@ cases =  [
   (SquareRoot (Sum (Number (-4.0)) (Multiply (Number (-4.0)) (Number 3.0))), Left NegativeRoot),
   (Pow (Div (Number 10.0) (Number 5.0)) (Multiply (Number 2.0) (Number 2.0)), Right 16.0) 
   ]
+  
 test :: Expr -> Either Error Double -> IO () 
 test expr expected = 
     let actual = eval expr in 
@@ -91,5 +92,4 @@ test expr expected =
 main :: IO () 
 main = do 
   mapM_ (uncurry test) cases 
-
   
