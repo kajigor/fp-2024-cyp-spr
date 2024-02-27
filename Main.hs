@@ -2,7 +2,6 @@ module Main where
 
 import Text.Printf (printf)
 import Control.Monad (unless)
-import Data.Either ( isLeft, fromRight, isRight )
 
 data Op = Add | Sub | Mul | Div | Pow
 
