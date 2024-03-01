@@ -97,7 +97,9 @@ cases = [
   (Sqrt $ Const 1.0, Right 1.0),
   (Bin (Sqrt (Const 9.0)) Plus (Bin (Const 2) Pow (Const 7.0)), Right 131.0),
   (Sqrt (Const (-1)), Left $ NegativeRoot "-1.0"),
-  (Bin (Bin (Const 7.0) Mult (Const 2.0)) Div (Bin (Const 4.0) Minus (Const 4.0)), Left $ DivByZero "14.0")
+  (Bin (Bin (Const 7.0) Mult (Const 2.0)) Div (Bin (Const 4.0) Minus (Const 4.0)), Left $ DivByZero "14.0"),
+  (Bin (Const 7.0) Div (Const 2.0), Right 3.5),
+  (Bin (Bin (Const 7.0) Div (Sqrt (Const 4.0))) Minus (Bin (Sqrt (Sqrt (Sqrt  (Const 256.0)))) Mult (Const 2)), Right (-0.5))
   ]
 
 test :: Expr -> Either Error Double -> IO () 
