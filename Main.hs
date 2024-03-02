@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-
 import Text.Printf (printf)
 import Control.Monad (unless)
 
@@ -41,6 +39,7 @@ instance Functor (ArrowT a) where
 -}
 
 
+-- a :: (Floating a, Ord a)
 data Expr a = Const a 
             | SquareRoot (Expr a)
             | Plus (Expr a) (Expr a)
@@ -50,6 +49,7 @@ data Expr a = Const a
             | Pow (Expr a) (Expr a) 
             | Var String
           deriving Eq
+
 
 instance Show a => Show (Expr a) where 
   show e = case e of
@@ -62,6 +62,7 @@ instance Show a => Show (Expr a) where
           (Pow e1 e2)     -> printf "(%s %s %s)" (show e1) "^" (show e2)
           (Var v)         -> printf "%s" (show v)
 
+
 data Error a = DivisionByZero (Expr a) (Expr a) | RootOfNegative (Expr a) | UndefinedVariable String
             deriving Eq
 
@@ -69,7 +70,7 @@ instance Show a => Show (Error a) where
   show (DivisionByZero e1 e2) = printf "Error when dividing %s by %s. Denominator was equal to zero" (show e1) (show e2)
   show (RootOfNegative e)     = printf "Error when taking square root. Expression %s was negative" (show e)
   show (UndefinedVariable v)  = printf "Undefined variable %s" v
-
+ 
 
 eval :: (Floating a, Ord a) => Expr a -> [(String, a)] -> Either (Error a) a 
 eval e ls = case e of
@@ -90,7 +91,6 @@ eval e ls = case e of
         findVariableValue name ((var, val):rest)
           | var == name = Right val
           | otherwise = findVariableValue name rest
-
 
 type ExprConstCaseType = Double
 
@@ -117,6 +117,32 @@ test expr var_list expected =
       printf "eval (%s) should be %s but it was %s\n" (show expr) (show expected) (show actual) 
 
 
+simplify :: (Floating a, Ord a) => Expr a -> Expr a
+
+simplify e = if trySimplifyResult /= e then simplify trySimplifyResult else trySimplifyResult where
+  trySimplifyResult = trySimplify e
+
+  trySimplify (Plus (Const 0) expr) = trySimplify expr
+  trySimplify (Plus expr (Const 0)) = trySimplify expr 
+
+  trySimplify (Mult (Const 0) _) = Const 0
+  trySimplify (Mult _ (Const 0)) = Const 0
+
+  trySimplify (Mult (Const 1) expr) = trySimplify expr  
+  trySimplify (Mult expr (Const 1)) = trySimplify expr
+
+  trySimplify (Div l (Const 1)) = trySimplify l
+
+  trySimplify (Minus l (Const 0)) = trySimplify l
+
+  trySimplify (Mult expr1 expr2) = Mult (trySimplify expr1) (trySimplify expr2)
+  trySimplify (Plus expr1 expr2) = Plus (trySimplify expr1) (trySimplify expr2) 
+  trySimplify (Minus expr1 expr2) = Minus (trySimplify expr1) (trySimplify expr2)
+  trySimplify expr = expr
+
+
+
+{-
 simplify :: (Eq a, Fractional a) => Expr a -> Expr a
 simplify e = if trySimplify /= e then simplify trySimplify else trySimplify
   where 
@@ -140,11 +166,36 @@ simplify e = if trySimplify /= e then simplify trySimplify else trySimplify
         rule5 ex                 = ex 
 
         trySimplify = foldl (<$>) id [rule1, rule2, rule3, rule4, rule5] e
+-}
 
 
+simplifyTests :: [(Expr ExprConstCaseType, Expr ExprConstCaseType)]
+simplifyTests = [ (Mult (Const 0) (Const 5), Const 0),
+          (Plus (Mult (Const 1) (Var "x")) (Const 0), Var "x"),
+          (Plus (Const 0) (       
+                Mult  (Const 1) (    
+                      Minus (Div (Const 42) (Const 1) ) (Const 0) 
+                )
+                )
+        , Const 42), 
+        (Plus (Const 1) (Mult (Const 0) (Var "x") ), Const 1)]
 
+
+testSimplify :: Expr ExprConstCaseType -> Expr ExprConstCaseType-> IO () 
+testSimplify exprToSimplify expectedExpr = 
+    let actual = simplify exprToSimplify in 
+    unless (expectedExpr == actual) $ describeFailure actual
+  where 
+    describeFailure actual = 
+      printf "simplify (%s) should be %s but it was %s\n" (show exprToSimplify) (show expectedExpr) (show actual) 
+
+instance Num a => Num (Expr a) where
+  (+) = Plus
+  (*) = Mult
+  negate = Minus (Const 0) 
+  fromInteger = Const . fromInteger
 
 main :: IO () 
 main = do 
   mapM_ (\(expr, expected, vars) -> test expr expected vars) cases
-  --mapM_ (uncurry test) cases 
+  mapM_ (uncurry testSimplify) simplifyTests
