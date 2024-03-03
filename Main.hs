@@ -4,19 +4,53 @@ import Text.Printf (printf)
 import Control.Monad (unless)
 import Data.Either (isRight, fromRight)
 import Data.Text.Internal.Read (IParser(P))
-
-data Expr = Num Double
-            | Plus Expr Expr
-            | Minus Expr Expr
-            | Mult Expr Expr
-            | Div Expr Expr
-            | Pow Expr Expr
-            | Root Expr
-            deriving (Eq)
+import Data.Maybe (fromJust, isNothing)
+import Data.List (find)
+import GHC.Exts.Heap (GenClosure(value))
 
 
-instance Show Expr where 
-  show (Num ex) = show ex
+newtype Either2 a b = Either2 (Either a b) deriving (Show)
+
+instance Functor (Either2 a) where
+    fmap :: (b -> c) -> Either2 a b -> Either2 a c
+    fmap f (Either2 (Left x)) = Either2(Left x)
+    fmap f (Either2 (Right x)) = Either2(Right (f x))
+
+{-
+
+  1) fmap id = id
+
+  fmap id (Either2 (Left x)) = Either2(Left x)
+  fmap id (Either2 (Right x)) = Either2(Right (id x)) =  Either2(Right x)  
+
+
+  2) fmap (f . g)  ==  fmap f . fmap g
+
+  fmap (f . g) (Either2 (Left x)) = Either2 (Left x) = fmap f (Either2 (Left x)) = fmap f . fmap g (Either2 (Left x))
+  fmap (f . g) (Either2 (Right x)) = Either2 (Right (f.g) x) = fmap f (Either2 (Right g x)) = fmap f . fmap g (Either2 (Right x))
+
+-}
+
+newtype MyArrow a b = MyArrow((->) a b)
+
+instance Functor (MyArrow f) where
+    fmap :: (a -> b) -> MyArrow f a -> MyArrow f b
+    fmap f (MyArrow g)  = MyArrow (f . g)
+
+data Expr a = Var String
+              | Const a
+              | Plus (Expr a) (Expr a)
+              | Minus (Expr a) (Expr a)
+              | Mult (Expr a) (Expr a)
+              | Div (Expr a) (Expr a)
+              | Pow (Expr a) (Expr a)
+              | Root (Expr a)
+              deriving (Eq)
+
+
+instance (Show a) => Show (Expr a) where 
+  show (Var ex) = ex
+  show (Const ex) = show ex
   show (Plus ex1 ex2) = "(" ++ show ex1 ++ " + " ++ show ex2 ++ ")"
   show (Minus ex1 ex2) = "(" ++ show ex1 ++ " - " ++ show ex2 ++ ")"
   show (Mult ex1 ex2) = "(" ++ show ex1 ++ " * " ++ show ex2 ++ ")"
@@ -27,6 +61,7 @@ instance Show Expr where
 data Error = DivideByZero String
             | NegativeFromRoot String 
             | PowNaN String 
+            | VariableNotApplied String
             | ComplexError Error Error
             deriving (Eq)
 
@@ -34,70 +69,78 @@ instance Show Error where
   show (DivideByZero msg) = "DivideByZero error " ++ show msg
   show (NegativeFromRoot msg) = "NegativeFromRoot error " ++ show msg
   show (PowNaN msg) = "PowNaN error " ++ show msg
+  show (VariableNotApplied msg) = "VariableNotApplied error " ++ show msg
   show (ComplexError error1 error2) = "ComplexErrorOf " ++ show error1 ++ " and " ++ show error2
 
-andExprError :: (Expr -> Expr -> Expr) -> Either Error Expr -> Either Error Expr -> Either Error Expr -- priority for the errors, operands otherwise
+andExprError :: (Expr a -> Expr a -> Expr a) -> Either Error (Expr a) -> Either Error (Expr a) -> Either Error (Expr a) -- priority for the errors, operands otherwise
 andExprError _ (Left error1) (Left error2) = Left (ComplexError error1 error2)
 andExprError _ (Right expr1) (Left error2) = Left error2
 andExprError _ (Left error1) (Right expr2) = Left error1
 andExprError oper (Right expr1) (Right expr2) = Right (oper expr1 expr2)
 
 
-resolve :: Either Error Expr -> Either Error Expr
-resolve (Left error) = Left error
+resolve :: (RealFloat a, Ord a, Show a) => Either Error (Expr a) -> [(String, a)] -> Either Error (Expr a)
+resolve (Left error) _ = Left error
 
-resolve (Right (Num n)) = Right (Num n)
+resolve (Right (Const n)) _ = Right (Const n)
 
-resolve (Right (Root (Num n)))
+resolve (Right (Root (Const n))) _
   | n < 0 = Left (NegativeFromRoot ("(root of " ++ show n ++ ")"))
-  | otherwise = Right (Num (sqrt n))
+  | otherwise = Right (Const (sqrt n))
 
-resolve (Right (Plus (Num n1) (Num n2))) = Right $ Num (n1 + n2)
-resolve (Right (Minus (Num n1) (Num n2))) = Right $ Num (n1 - n2)
-resolve (Right (Mult (Num n1) (Num n2))) = Right $ Num (n1 * n2)
-resolve (Right (Div (Num n1) (Num n2))) 
+resolve (Right (Plus (Const n1) (Const n2))) _ = Right $ Const (n1 + n2)
+resolve (Right (Minus (Const n1) (Const n2))) _ = Right $ Const (n1 - n2)
+resolve (Right (Mult (Const n1) (Const n2))) _ = Right $ Const (n1 * n2)
+resolve (Right (Div (Const n1) (Const n2))) _ 
   | n2 == 0 = Left (DivideByZero ("(div of " ++ show n1 ++ " and " ++ show n2 ++ ")"))
-  | otherwise = Right $ Num (n1 / n2)
+  | otherwise = Right $ Const (n1 / n2)
 
-resolve (Right (Pow (Num n1) (Num n2)))
+resolve (Right (Pow (Const n1) (Const n2))) _
   | isNaN (n1 ** n2)= Left (PowNaN ("(pow of " ++ show n1 ++ " and " ++ show n2 ++ ")"))
-  | otherwise = Right (Num (n1 ** n2))
+  | otherwise = Right (Const (n1 ** n2))
 
-resolve (Right (Root expr)) = resolve $ either Left (Right . Root) (resolve (Right expr)) -- propagate error and recursive Root if correct
-resolve (Right (Plus expr1 expr2)) = resolve $ andExprError Plus (resolve (Right expr1)) (resolve (Right expr2))
-resolve (Right (Minus expr1 expr2)) = resolve $ andExprError Minus (resolve (Right expr1)) (resolve (Right expr2))
-resolve (Right (Mult expr1 expr2)) = resolve $ andExprError Mult (resolve (Right expr1)) (resolve (Right expr2))
-resolve (Right (Div expr1 expr2)) = resolve $ andExprError Div (resolve (Right expr1)) (resolve (Right expr2))
-resolve (Right (Pow expr1 expr2)) = resolve $ andExprError Pow (resolve (Right expr1)) (resolve (Right expr2))
+resolve (Right (Var v)) vars
+  | isNothing lookup = Left (VariableNotApplied ("(variable " ++ v ++ ")"))
+  | otherwise = Right $ Const (snd $ fromJust lookup)
+  where
+    lookup = find (\(x, _) -> x == v) vars
 
 
-exprToNum :: Expr -> Double
-exprToNum (Num n) = n
+resolve (Right (Root expr)) vars = resolve (Root <$> resolve (Right expr) vars) vars -- propagate error and recursive Root if correct
+resolve (Right (Plus expr1 expr2)) vars = resolve (andExprError Plus (resolve (Right expr1) vars) (resolve (Right expr2) vars)) vars
+resolve (Right (Minus expr1 expr2)) vars = resolve (andExprError Minus (resolve (Right expr1) vars) (resolve (Right expr2) vars)) vars
+resolve (Right (Mult expr1 expr2)) vars = resolve (andExprError Mult (resolve (Right expr1) vars) (resolve (Right expr2) vars)) vars
+resolve (Right (Div expr1 expr2)) vars = resolve (andExprError Div (resolve (Right expr1) vars) (resolve (Right expr2) vars)) vars
+resolve (Right (Pow expr1 expr2)) vars = resolve (andExprError Pow (resolve (Right expr1) vars) (resolve (Right expr2) vars)) vars
 
-eval :: Expr -> Either Error Double
-eval expr = either Left (Right . exprToNum) (resolve (Right expr)) 
 
-cases :: [(Expr, Either Error Double)]
+exprToNum :: Expr a -> a
+exprToNum (Const n) = n
+
+eval :: (RealFloat a, Ord a, Show a) => Expr a -> [(String, a)] -> Either Error a
+eval expr vars = exprToNum <$> resolve (Right expr) vars 
+
+cases :: (RealFloat a, Ord a, Show a) => [(Expr a, [(String, a)], Either Error Double)]
 cases = [
-    (Root $ Num 4, Right 2.0),
-    (Plus (Root (Num 9)) (Minus (Num 2) (Num 7)), Right (-2.0)),
-    (Div (Pow (Num 9) (Num 3)) (Pow (Num 4) (Num 2)), Right 45.5625),
-    (Mult (Div (Num 3) (Num 150)) (Div (Num 200) (Num 10)),Right 0.4),
+    (Root $ Const 4, [], Right 2.0),
+    (Plus (Root (Const 9)) (Minus (Const 2) (Const 7)), [], Right (-2.0)),
+    (Div (Pow (Const 9) (Const 3)) (Pow (Const 4) (Const 2)), [], Right 45.5625),
+    (Mult (Div (Const 3) (Const 150)) (Div (Const 200) (Const 10)), [], Right 0.4),
     -- (1 - 1^3/3!) * 6
-    (Mult (Num 6) (Minus (Num 1) (Div (Pow (Num 1) (Num 3)) (Mult (Num 2) (Num 3))))
-                      , Right 5.0),
-
-
-    (Root (Num (-1)), Left $ NegativeFromRoot "(root of -1.0)"),
-    (Div (Mult (Num 7.0) (Num 2.0)) (Minus (Num 4.0) (Num 4.0)), Left $ DivideByZero "(div of 14.0 and 0.0)"),
-    (Div (Pow (Num (-1.0)) (Num 0.5)) (Root (Num 4.0)), Left $ PowNaN "(pow of -1.0 and 0.5)"),
-    (Plus (Root (Num (-100500))) (Div (Num 100) (Num 0)), Left $ ComplexError (NegativeFromRoot "(root of -100500.0)") (DivideByZero "(div of 100.0 and 0.0)"))
-
+    (Mult (Const 6) (Minus (Const 1) (Div (Pow (Const 1) (Const 3)) (Mult (Const 2) (Const 3)))), [], Right 5.0),
+    (Root (Const (-1)), [], Left $ NegativeFromRoot "(root of -1.0)"),
+    (Div (Mult (Const 7.0) (Const 2.0)) (Minus (Const 4.0) (Const 4.0)), [], Left $ DivideByZero "(div of 14.0 and 0.0)"),
+    (Div (Pow (Const (-1.0)) (Const 0.5)) (Root (Const 4.0)), [], Left $ PowNaN "(pow of -1.0 and 0.5)"),
+    (Plus (Root (Const (-100500))) (Div (Const 100) (Const 0)), [], Left $ ComplexError (NegativeFromRoot "(root of -100500.0)") (DivideByZero "(div of 100.0 and 0.0)")),
+  
+    (Var "A", [("A", 1)], Right 1),
+    (Var "A", [], Left $ VariableNotApplied "(variable A)"),
+    (Mult (Const 6) (Minus (Var "A") (Div (Pow (Var "A") (Var "C")) (Mult (Var "B") (Var "C")))), [("A", 1), ("B", 2), ("C", 3)], Right 5.0)
   ]
 
-test :: Expr -> Either Error Double -> IO () 
-test expr expected = 
-    let actual = eval expr in 
+test :: (RealFloat a, Ord a, Show a) => Expr a -> [(String, a)] -> Either Error a -> IO () 
+test expr vars expected = 
+    let actual = eval expr vars in 
     unless (expected == actual) $ describeFailure actual
   where 
     describeFailure actual = 
@@ -106,5 +149,5 @@ test expr expected =
 
 main :: IO () 
 main = do 
-  mapM_ (uncurry test) cases 
-  
+  mapM_ (\(expr, expected, vars) -> test expr expected vars) cases
+  -- mapM_ (uncurry testSimplify) simplifyTests
