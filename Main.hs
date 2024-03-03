@@ -2,6 +2,17 @@ module Main where
 
 import Text.Printf (printf)
 import Control.Monad (unless)
+import Data.Map (lookup, fromList)
+
+
+data MyEither a b = L a | R b deriving (Show, Read)
+
+
+instance Functor (MyEither a) where
+  fmap :: (b -> c) -> MyEither a b -> MyEither a c
+  fmap f (L value) = L value
+  fmap f (R value) = R (f value)
+
 
 -- Type for unary operator
 data Operator1 = Sqrt | Neg deriving (Eq)
@@ -23,10 +34,11 @@ instance Show Operator2 where
 
 
 -- Type for expression
-data Expr = Arg Double | Marg Operator1 Expr | CE Expr Operator2 Expr
+data Expr = Arg Double | Var String | Marg Operator1 Expr | CE Expr Operator2 Expr
 
 instance Show Expr where
   show (Arg value) = show value
+  show (Var variable) = show variable
   show (Marg op value)
     | op == Neg = "(" ++ (show op) ++ (show value) ++ ")"
     | op == Sqrt = (show op) ++ "(" ++ (show value) ++ ")"
@@ -34,6 +46,7 @@ instance Show Expr where
 
 instance Eq Expr where
   Arg value1 == Arg value2 = value1 == value2
+  Var variable1 == Var variable2 = variable1 == variable2
   Marg op1 value1 == Marg op2 value2 =
    op1 == op2 && value1 == value2
   CE expr11 op1 expr12 == CE expr21 op2 expr22 =
@@ -41,7 +54,11 @@ instance Eq Expr where
   _ == _ = False
 
 
-data Error = OutOfPossibleValuesError Operator1 Double | ZeroDivisionError Double | IncorrectDegreeOfValue Double
+data Error =
+  OutOfPossibleValuesError Operator1 Double
+  | ZeroDivisionError Double
+  | IncorrectDegreeOfValue Double
+  | VariableDoesNotExist String
 
 instance Show Error where
   show (OutOfPossibleValuesError op value) = "OutOfPossibleValuesError: operator "
@@ -50,6 +67,8 @@ instance Show Error where
    ++ (show chislitel) ++ " can not be divided by 0"
   show (IncorrectDegreeOfValue value) = "IncorrectDegreeOfValue: value 0 in "
    ++ (show value) ++ " degree does not exist"
+  show (VariableDoesNotExist variable) = "VariableDoesNotExist: variable "
+   ++ variable ++ " is not defined"
 
 instance Eq Error where
   OutOfPossibleValuesError op1 value1 == OutOfPossibleValuesError op2 value2 =
@@ -57,6 +76,7 @@ instance Eq Error where
   ZeroDivisionError chislitel1 == ZeroDivisionError chislitel2 =
    chislitel1 == chislitel2
   IncorrectDegreeOfValue value1 == IncorrectDegreeOfValue value2 = value1 == value2
+  VariableDoesNotExist var1 == VariableDoesNotExist var2 = var1 == var2
   _ == _ = False
 
 
@@ -69,20 +89,25 @@ defineOperationEvaluator op
   | op == In = (**)
 
 
-eval :: Expr -> Either Error Double
-eval (Arg value) = Right value
+eval :: Expr -> [(String, Double)] -> Either Error Double
+eval (Arg value) list = Right value
 
-eval (Marg Neg expr) = case (eval expr) of
+eval (Var variable) list = let search_result = Data.Map.lookup variable (fromList list)
+                           in  case (search_result) of
+                             Just x -> Right x
+                             Nothing -> Left (VariableDoesNotExist variable)
+
+eval (Marg Neg expr) list = case (eval expr list) of
   Right result -> Right (-result)
   Left exception -> Left exception
 
-eval (Marg Sqrt expr) = case (eval expr) of
+eval (Marg Sqrt expr) list = case (eval expr list) of
   Right result -> if (result >= 0) then Right (result**0.5)
    else Left (OutOfPossibleValuesError Sqrt result)
   Left exception -> Left exception
 
-eval (CE expr1 op expr2) = case (eval expr1) of
-  Right result1 -> case (eval expr2) of
+eval (CE expr1 op expr2) list = case (eval expr1 list) of
+  Right result1 -> case (eval expr2 list) of
     Right result2 -> case (op) of
       Div -> if (result2 /= 0) then Right (defineOperationEvaluator op result1 result2)
        else Left (ZeroDivisionError result1)
@@ -141,7 +166,7 @@ cases = [
 
 test :: Expr -> Either Error Double -> IO ()
 test expr expected =
-    let actual = eval expr in
+    let actual = eval expr [] in
     unless (expected == actual) $ describeFailure actual
   where
     describeFailure actual =
