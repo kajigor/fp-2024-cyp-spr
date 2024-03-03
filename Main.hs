@@ -98,20 +98,27 @@ simplifyAdd expr = case expr of
 
 simplifySubtract :: (Eq a, Fractional a) => Expr a -> Expr a
 simplifySubtract expr = case expr of
+  Subtract (Const x) (Const y)
+    | x == y -> Const 0.0
+    | y == 0.0 -> Const x
+    | otherwise -> expr
+  Subtract (Var x) (Var y) 
+    | x == y -> Const 0.0
+    | otherwise -> expr
   Subtract x (Const 0.0) -> x
   _ -> expr
 
 
-chooseMultiplyByZeroSimplification :: Fractional a => Expr a -> Expr a
-chooseMultiplyByZeroSimplification expr = case expr of
+chooseMultiplyByZeroSimplification :: Fractional a => Expr a -> Expr a -> Expr a
+chooseMultiplyByZeroSimplification initExpr expr = case expr of
   Const _ -> Const 0.0
   Var _ -> Const 0.0
-  _ -> expr
+  _ -> initExpr
 
 simplifyMultiply :: (Eq a, Fractional a) => Expr a -> Expr a
 simplifyMultiply expr = case expr of
-  Multiply (Const 0.0) x -> chooseMultiplyByZeroSimplification x
-  Multiply x (Const 0.0) -> chooseMultiplyByZeroSimplification x
+  Multiply (Const 0.0) x -> chooseMultiplyByZeroSimplification expr x
+  Multiply x (Const 0.0) -> chooseMultiplyByZeroSimplification expr x
   Multiply (Const 1.0) x -> x
   Multiply x (Const 1.0) -> x
   _ -> expr
@@ -135,7 +142,7 @@ simplifyPower expr = case expr of
      | x >= 0.0 -> Const x
      | otherwise -> expr
   Power (Const x) (Const 0.0)
-     | x >= 0.0 -> Const 1.0
+     | x > 0.0 -> Const 1.0
      | otherwise -> expr
   _ -> expr
 
@@ -151,8 +158,8 @@ simplify expr = case expr of
 
 
 
-cases :: Fractional a => [(Expr a, Either Error a)]
-cases = [
+evalCases :: Fractional a => [(Expr a, Either Error a)]
+evalCases = [
   (Const 1, Right 1.0),
   (Var "x", Right 1.0),
   (Var "undefined", Left VariableIsUndefined),
@@ -171,8 +178,41 @@ cases = [
   (Power (Var "y") (Var "z"), Right 8)
   ]
 
-test :: (Show a, Ord a, Floating a) => Expr a -> Either Error a -> IO ()
-test expr expected =
+simplifyCases :: Fractional a => [(Expr a, Expr a)]
+simplifyCases = [
+  (Add (Const 1.0) (Const 0.0), Const 1.0),
+  (Add (Const 0.0) (Const 2.0), Const 2.0),
+  (Add (Add (Const 0.0) (Const 4.0)) (Const 0.0), Const 4.0),
+  (Add (Var "x") (Const 0.0), Var "x"),
+  (Add (Var "x") (Var "y"), Add (Var "x") (Var "y")),
+  (Subtract (Const 3.0) (Const 0.0), Const 3.0),
+  (Subtract (Const 3.0) (Const 3.0), Const 0.0),
+  (Subtract (Var "x") (Var "x"), Const 0.0),
+  (Subtract (Const 3.0) (Const 2.0), Subtract (Const 3.0) (Const 2.0)),
+  (Subtract (Var "x") (Var "y"), Subtract (Var "x") (Var "y")),
+  (Multiply (Const 2.0) (Const 1.0), Const 2.0),
+  (Multiply (Const 1.0) (Const 2.0), Const 2.0),
+  (Multiply (Const 2.0) (Const 0.0), Const 0.0),
+  (Multiply (Const 0.0) (Const 2.0), Const 0.0),
+  (Multiply (Var "x") (Const 0.0), Const 0.0),
+  (Multiply (Const 0.0) (Var "x"), Const 0.0),
+  (Multiply (Add (Const 2.0) (Const 3.0)) (Const 0.0), Multiply (Add (Const 2.0) (Const 3.0)) (Const 0.0)),
+  (Divide (Const 0.0) (Const 5.0), Const 0.0),
+  (Divide (Const 0.0) (Var "x"), Divide (Const 0.0) (Var "x")),
+  (Divide (Const 0.0) (Var "x"), Divide (Const 0.0) (Var "x")),
+  (Divide (Const 5.0) (Const 5.0), Const 1.0),
+  (Divide (Const 5.0) (Const 1.0), Const 5.0),
+  (Divide (Var "x") (Const 1.0), Var "x"),
+  (Divide (Var "x") (Var "x"), Divide (Var "x") (Var "x")),
+  (Power (Const 5.0) (Const 1.0), Const 5.0),
+  (Power (Const 5.0) (Const 0.0), Const 1.0),
+  (Power (Const (-3)) (Const 1.0), Power (Const (-3)) (Const 1.0)),
+  (Power (Const (-3)) (Const 0.0), Power (Const (-3)) (Const 0.0)),
+  (Power (Var "x") (Const 0.0), Power (Var "x") (Const 0.0))
+  ]
+
+testEval :: (Show a, Ord a, Floating a) => Expr a -> Either Error a -> IO ()
+testEval expr expected =
     let testMap = [("x", 1), ("y", 2), ("z", 3)]
         actual = eval expr testMap in
     unless (expected == actual) $ describeFailure actual
@@ -180,8 +220,17 @@ test expr expected =
     describeFailure actual =
       printf "eval (%s) should be %s but it was %s" (show expr) (show expected) (show actual)
 
+testSimplify :: (Show a, Ord a, Floating a) => Expr a -> Expr a -> IO ()
+testSimplify expr expected =
+    let actual = simplify expr in
+    unless (expected == actual) $ describeFailure actual
+  where
+    describeFailure actual =
+      printf "Simplify (%s) should be %s but it was %s" (show expr) (show expected) (show actual)
+
 
 main :: IO ()
 main = do
-  mapM_ (uncurry test) cases
+  mapM_ (uncurry testEval) evalCases
+  mapM_ (uncurry testSimplify) simplifyCases
   putStrLn "Done"
