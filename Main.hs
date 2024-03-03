@@ -34,6 +34,20 @@ instance (Show a) => Show (Expr a) where
   show (Square x) = "sqrt(" ++ show x ++ ")"
   show (Var name) = name
 
+instance (Num a) => Num (Expr a) where
+  (+) :: Num a => Expr a -> Expr a -> Expr a
+  (+) = Add 
+  (*) :: Num a => Expr a -> Expr a -> Expr a
+  (*) = Multiply
+  abs :: Num a => Expr a -> Expr a
+  abs = undefined
+  signum :: Num a => Expr a -> Expr a
+  signum = undefined
+  fromInteger :: Num a => Integer -> Expr a
+  fromInteger = Const . fromInteger
+  negate :: Num a => Expr a -> Expr a
+  negate = Multiply (Const (-1))
+  
 
 data Error = DivisorIsZero | SquareRootIsNegative | PowerBaseIsNegative | VariableIsUndefined deriving Eq
 instance Show Error where
