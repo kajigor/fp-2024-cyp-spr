@@ -118,6 +118,49 @@ eval (CE expr1 op expr2) list = case (eval expr1 list) of
   Left exception -> Left exception
 
 
+rule :: Expr -> Expr
+rule (Arg value) = Arg value
+
+rule (Var variable) = Var variable
+
+rule (Marg Neg (Marg Neg expr)) = expr
+rule (Marg Neg (Arg 0)) = Arg 0
+rule (Marg Sqrt (Arg 0)) = Arg 0
+rule (Marg op expr) = Marg op expr
+
+rule (CE (Arg 0) Mul expr2) = Arg 0
+rule (CE expr1 Mul (Arg 0)) = Arg 0
+
+rule (CE (Arg 1) Mul expr2) = expr2
+rule (CE expr1 Mul (Arg 1)) = expr1
+
+rule (CE (Arg 0) Plus expr2) = expr2
+rule (CE expr1 Plus (Arg 0)) = expr1
+
+rule (CE (Arg 0) Min expr2) = (Marg Neg expr2)
+rule (CE expr1 Min (Arg 0)) = expr1
+
+rule (CE expr1 Div (Arg 1)) = expr1
+rule (CE expr1 Div (Marg Neg (Arg 1))) = Marg Neg expr1
+
+rule (CE expr1 op expr2)
+  | (expr1 == expr2) && (op == Min) = Arg 0
+  | (expr1 == expr2) && (op == Div) = Arg 1
+  | (expr1 == expr2) && (op == Plus) = CE (Arg 2) Mul expr1
+  | (expr1 == expr2) && (op == Mul) = CE expr1 In (Arg 2)
+  | otherwise = CE expr1 op expr2
+
+
+simplify :: Expr -> Expr
+simplify (Arg value) = rule (Arg value)
+
+simplify (Var variable) = rule (Var variable)
+
+simplify (Marg anyOperator1 expr) = rule (Marg anyOperator1 (simplify expr))
+
+simplify (CE expr1 op expr2) = rule (CE (simplify expr1) op (simplify expr2))
+
+
 cases :: [(Expr, Either Error Double)]
 cases = [
  -- Double as expression = Double
@@ -161,12 +204,22 @@ cases = [
  -- Complex expression with error in sub-expression = Exception of first sub expression Error
  (CE (CE (Arg 2) Mul (Marg Sqrt (Arg (-9)))) Plus (CE (Arg 0) Plus (Marg Neg (Arg 5))), Left (OutOfPossibleValuesError Sqrt (-9))),
  (CE (CE (Arg 2) Mul (Marg Sqrt (Arg (9)))) Plus (CE (Arg 2) Div (Marg Neg (Arg 0))), Left (ZeroDivisionError 2)),
- (CE (CE (Arg 2) Mul (Marg Sqrt (Arg (-9)))) Plus (CE (Arg 2) Div (Marg Neg (Arg 0))), Left (OutOfPossibleValuesError Sqrt (-9)))
+ (CE (CE (Arg 2) Mul (Marg Sqrt (Arg (-9)))) Plus (CE (Arg 2) Div (Marg Neg (Arg 0))), Left (OutOfPossibleValuesError Sqrt (-9))),
+ -- Variables
+ (Var "x", Right 2),
+ (Var "y", Right 0),
+ (CE (Var "x") Mul (Arg 3), Right 6),
+ (CE (Var "x") Mul (Var "y"), Right 0),
+ (CE (Var "x") Plus (Var "y"), Right 2),
+ (CE (Var "x") In (Var "y"), Right 1),
+ (CE (Var "y") In (Arg (-2)), Left (IncorrectDegreeOfValue (-2))),
+ (CE (Var "z") Mul (Arg 3), Left (VariableDoesNotExist "z")),
+ (CE (Arg 3) Mul (Var "z"), Left (VariableDoesNotExist "z"))
  ]
 
 test :: Expr -> Either Error Double -> IO ()
 test expr expected =
-    let actual = eval expr [] in
+    let actual = eval expr [("x", 2), ("y", 0)] in
     unless (expected == actual) $ describeFailure actual
   where
     describeFailure actual =
