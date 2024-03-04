@@ -81,16 +81,13 @@ eval e ls = case e of
   Div e1 e2    -> perfOp (\ x y -> if y /= 0 then Right (x/y) else Left (DivisionByZero e1 e2)) e1 e2
   Pow e1 e2   -> perfOp (\ x y -> Right $ x** y ) e1 e2
   SquareRoot e1 -> perfOp (\_ v -> if v >=0 then Right (sqrt v) else Left (RootOfNegative e1)) e1 e1
-  Var v         -> findVariableValue v ls
+  Var v         -> case lookup v ls of 
+                          Just val -> Right val
+                          Nothing -> Left $ UndefinedVariable v
   where perfOp op e1 e2 = case (eval e1 ls, eval e2 ls) of
                     (Right v1, Right v2) -> op v1 v2
                     (Left er, _) -> Left er
                     (_, Left er) -> Left er
-
-        findVariableValue v [] = Left (UndefinedVariable v)
-        findVariableValue name ((var, val):rest)
-          | var == name = Right val
-          | otherwise = findVariableValue name rest
 
 type ExprConstCaseType = Double
 
@@ -105,7 +102,12 @@ cases = [
         (SquareRoot e, [],  Left (RootOfNegative e)),
         (Var "x", [("x", 100)], Right 100),
         (Plus (Var "x") (Var "y"), [("x", 10.0), ("y", 20.0)], Right 30.0),
-        (Plus (Var "z") (Var "y"), [("x", 10), ("y", 20)], Left $ UndefinedVariable "z")
+        (Plus (Var "z") (Var "y"), [("x", 10), ("y", 20)], Left $ UndefinedVariable "z"),
+        (Minus (Var "x") (Var "x"), [("x", 777)], Right 0), 
+        (Minus (Var "x") (Var "x"), [("x", 14)], Right 0), 
+        (Pow (Var "x") (Var "y"), [("x", 2), ("y", 10)], Right 1024 ),
+        (Pow (Var "x") (Var "y"), [("x", 2), ("y", 0)], Right 1 ),
+        (Pow (Var "x") (Var "y"), [("x", 0), ("y", 0)], Right 1 )
         ] 
 
 test :: Expr ExprConstCaseType -> [(String, ExprConstCaseType)]  -> Either (Error ExprConstCaseType) ExprConstCaseType -> IO () 
@@ -137,7 +139,8 @@ simplify e = if trySimplifyResult /= e then simplify trySimplifyResult else tryS
 
   trySimplify (Mult expr1 expr2) = Mult (trySimplify expr1) (trySimplify expr2)
   trySimplify (Plus expr1 expr2) = Plus (trySimplify expr1) (trySimplify expr2) 
-  trySimplify (Minus expr1 expr2) = Minus (trySimplify expr1) (trySimplify expr2)
+  trySimplify (Minus expr1 expr2) = if expr1 == expr2 then Const 0 else Minus (trySimplify expr1) (trySimplify expr2)
+
   trySimplify expr = expr
 
 
@@ -178,7 +181,13 @@ simplifyTests = [ (Mult (Const 0) (Const 5), Const 0),
                 )
                 )
         , Const 42), 
-        (Plus (Const 1) (Mult (Const 0) (Var "x") ), Const 1)]
+        (Plus (Const 1) (Mult (Const 0) (Var "x") ), Const 1), 
+        (Minus (Const 1) (Const 1), Const 0),
+        (Minus (Var "x") (Var "x"), Const 0),
+        let e = Pow (Div (Mult (Minus (Pow (Plus (SquareRoot(Const 25)) (Const 3)) (Const 2)) (Mult (Const 4) (Const 7))) (Const 2)) (Const 5)) (Const 3) in
+        (Minus e e, Const 0),
+        (Pow (Div (Mult (Minus (Pow (Plus (SquareRoot(Const 25)) (Const 3)) (Const 2)) (Mult (Const 4) (Const 7))) (Const 2)) (Const 5)) (Const 3), Pow (Div (Mult (Minus (Pow (Plus (SquareRoot(Const 25)) (Const 3)) (Const 2)) (Mult (Const 4) (Const 7))) (Const 2)) (Const 5)) (Const 3)),
+        (Pow (Div (Mult (Minus (Pow (Plus (SquareRoot(Const 25)) (Var "x")) (Const 2)) (Mult (Const 4) (Const 7))) (Const 2)) (Const 5)) (Const 3), Pow (Div (Mult (Minus (Pow (Plus (SquareRoot(Const 25)) (Var "x")) (Const 2)) (Mult (Const 4) (Const 7))) (Const 2)) (Const 5)) (Const 3))]
 
 
 testSimplify :: Expr ExprConstCaseType -> Expr ExprConstCaseType-> IO () 
