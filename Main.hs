@@ -120,6 +120,45 @@ exprToNum (Const n) = n
 eval :: (RealFloat a, Ord a, Show a) => Expr a -> [(String, a)] -> Either Error a
 eval expr vars = exprToNum <$> resolve (Right expr) vars 
 
+simplify :: (RealFloat a, Ord a, Show a) => Expr a -> Expr a
+
+simplify (Const x) = Const x
+simplify (Var x) = Var x
+
+simplify (Plus (Const 0) expr) = simplify expr
+simplify (Plus expr (Const 0)) = simplify expr
+simplify (Plus (Const a) (Const b)) = if a - b == 0 then Const 0 else Minus (simplify (Const a)) (simplify (Const b))
+
+
+simplify (Minus (Const 0) expr) = simplify expr
+simplify (Minus expr (Const 0)) = simplify expr
+simplify (Minus (Const a) (Const b)) = if a == b then Const 0 else Minus (simplify (Const a)) (simplify (Const b))
+
+
+simplify (Mult (Const 0) expr) = Const 0
+simplify (Mult expr (Const 0)) = Const 0
+
+simplify (Mult (Const 1) expr) = simplify expr
+simplify (Mult expr (Const 1)) = simplify expr
+
+simplify (Div expr (Const 1)) = simplify expr
+simplify (Div (Const 0) expr) = if simplify expr /= Const 0 then Const 0 else Div (Const 0) (Const 0)
+simplify (Div expr1 expr2) = if (simple1 == simple2) && (simple1 /= Const 0) && (simple2 /= Const 0)
+                             then Const 1 else Div simple1 simple2
+  where simple1 = simplify expr1
+        simple2 = simplify expr2
+-- same for the Pow
+
+simplify (Root (Const 1)) = Const 1
+simplify (Root (Const 0)) = Const 0
+
+simplify (Root expr) = Root $ simplify expr
+simplify (Plus expr1 expr2) = Plus (simplify expr1) (simplify expr2) -- I wonder if there is a prettier way
+simplify (Minus expr1 expr2) = Minus (simplify expr1) (simplify expr2) 
+simplify (Mult expr1 expr2) = Mult (simplify expr1) (simplify expr2) 
+simplify (Div expr1 expr2) = Div (simplify expr1) (simplify expr2)
+simplify (Pow expr1 expr2) = Pow (simplify expr1) (simplify expr2)
+
 cases :: (RealFloat a, Ord a, Show a) => [(Expr a, [(String, a)], Either Error Double)]
 cases = [
     (Root $ Const 4, [], Right 2.0),
@@ -138,6 +177,33 @@ cases = [
     (Mult (Const 6) (Minus (Var "A") (Div (Pow (Var "A") (Var "C")) (Mult (Var "B") (Var "C")))), [("A", 1), ("B", 2), ("C", 3)], Right 5.0)
   ]
 
+
+simplifyCases :: (RealFloat a, Ord a, Show a) => [(Expr a, Expr a)]
+simplifyCases = [
+  (Plus (Const 1.0) (Const 0.0), Const 1.0),
+  (Plus (Const 1.0) (Const (-1.0)), Const 0.0),
+  (Plus (Const 0.0) (Const 2.0), Const 2.0),
+  (Plus (Plus (Const 0.0) (Plus (Const 0.0) (Const 4.0))) (Const 0.0), Const 4.0),
+  (Plus (Var "x") (Const 0.0), Var "x"),
+  (Plus (Var "x") (Var "y"), Plus (Var "x") (Var "y")),
+  (Minus (Const 3.0) (Const 0.0), Const 3.0),
+  (Minus (Const 3.0) (Const 3.0), Const 0.0),
+  (Minus (Const 3.0) (Const 4.0), Minus (Const 3.0) (Const 4.0)),
+  (Minus (Var "x") (Var "y"), Minus (Var "x") (Var "y")),
+  (Mult (Const 2.0) (Const 1.0), Const 2.0),
+  (Mult (Const 1.0) (Const 2.0), Const 2.0),
+  (Mult (Const 2.0) (Const 0.0), Const 0.0),
+  (Mult (Const 0.0) (Const 2.0), Const 0.0),
+  (Mult (Var "x") (Const 0.0), Const 0.0),
+  (Mult (Const 0.0) (Var "x"), Const 0.0),
+  (Div (Const 0.0) (Const 5.0), Const 0.0),
+  (Div (Const 5.0) (Const 0.0), Div (Const 5.0) (Const 0.0)),
+  (Div (Const 4.0) (Const 4.0), Const 1.0),
+  (Div (Const 5.0) (Const 1.0), Const 5.0),
+  (Div (Var "x") (Const 1.0), Var "x"),
+  (Div (Var "x") (Var "x"), Const 1.0)
+  ]
+
 test :: (RealFloat a, Ord a, Show a) => Expr a -> [(String, a)] -> Either Error a -> IO () 
 test expr vars expected = 
     let actual = eval expr vars in 
@@ -146,8 +212,16 @@ test expr vars expected =
     describeFailure actual = 
       printf "eval (%s) should be %s but it was %s\n" (show expr) (show expected) (show actual) 
   
+testSimplify :: (RealFloat a, Ord a, Show a) => Expr a -> Expr a -> IO ()
+testSimplify expr expected =
+    let actual = simplify expr in
+    unless (expected == actual) $ describeFailure actual
+  where
+    describeFailure actual =
+      printf "Simplify (%s) should be %s but it was %s\n" (show expr) (show expected) (show actual)
 
 main :: IO () 
 main = do 
   mapM_ (\(expr, expected, vars) -> test expr expected vars) cases
-  -- mapM_ (uncurry testSimplify) simplifyTests
+  mapM_ (uncurry testSimplify) simplifyCases
+  putStrLn "Done"
