@@ -37,6 +37,18 @@ instance Functor (MyArrow f) where
     fmap :: (a -> b) -> MyArrow f a -> MyArrow f b
     fmap f (MyArrow g)  = MyArrow (f . g)
 
+{-
+  1) fmap id = id
+  
+  fmap id (a -> b) = id . a -> b = a -> b 
+
+
+  2) fmap (f . g)  ==  fmap f . fmap g
+
+  fmap (f . g) (a -> b) =  f . g . (a -> b) = fmap f (g . (a-> b)) = fmap f (fmap g (a-> b))
+
+-}
+
 data Expr a = Var String
               | Const a
               | Plus (Expr a) (Expr a)
