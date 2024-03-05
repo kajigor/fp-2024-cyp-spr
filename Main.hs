@@ -65,63 +65,31 @@ evalBinExp Multiply (Right n1) (Right n2) = Right (n1 * n2)
 evalBinExp Power (Right n1) (Right n2) = Right (n1 ** n2)
 evalBinExp Divide (Right n1) (Right n2) = evalDivideExp n1 n2
 
-evalDivideExp :: (Floating a, Ord a) => a ->  a -> Either Error a
+evalDivideExp :: (Floating a, Ord a) => a -> a -> Either Error a
 evalDivideExp _ 0 = Left DivisionByZero
 evalDivideExp n1 n2 = Right (n1 / n2)
 
--- simplify :: (Num a, Ord a) => Expr a -> Expr a
--- simplify (BinExpr Plus (Const 0) x) = simplify x
--- simplify (BinExpr Plus x (Const 0)) = simplify x
--- simplify (BinExpr Minus x (Const 0)) = simplify x
--- simplify (BinExpr Multiply (Const 1) x) = simplify x
--- simplify (BinExpr Multiply x (Const 1)) = simplify x
--- simplify (BinExpr Multiply (Const 0) _) = Const 0
--- simplify (BinExpr Multiply _ (Const 0)) = Const 0
--- simplify (BinExpr Divide x (Const 1)) = simplify x
--- simplify (BinExpr Power (Const 1) _) = (Const 1)
--- simplify (BinExpr Power (Const 0) _) = (Const 0)
--- simplify (BinExpr Power x (Const 1)) = simplify x
--- simplify (BinExpr Power x (Const 0)) = (Const 1)
--- simplify (BinExpr binOp x y) = simplify (BinExpr binOp (simplify x) (simplify y))
--- simplify (SquareRoot (Const 0)) = (Const 0)
--- simplify (SquareRoot (Const 1)) = (Const 1)
--- simplify (SquareRoot x) = simplify (SquareRoot (simplify x))
--- simplify exp = exp
-
 simplify :: (Num a, Ord a) => Expr a -> Expr a
-simplify (BinExpr Plus x y) = simplifyPlus (simplify x) (simplify y)
-simplify (BinExpr Minus x y) = simplifyMinus (simplify x) (simplify y)
-simplify (BinExpr Multiply x y) = simplifyMultiply (simplify x) (simplify y)
-simplify (BinExpr Divide x y) = simplifyDivide (simplify x) (simplify y)
-simplify (BinExpr Power x y) = simplifyPower (simplify x) (simplify y)
-simplify (SquareRoot x) = simplifySqrt (simplify x)
+simplify (SquareRoot x) = simplifySquare (SquareRoot (simplify x)) where
+    simplifySquare (SquareRoot (Const 0)) = (Const 0)
+    simplifySquare (SquareRoot (Const 1)) = (Const 1)
+    simplifySquare x = x
+simplify (BinExpr binOp x y) = simplifyBinExp (BinExpr binOp (simplify x) (simplify y)) where
+  simplifyBinExp (BinExpr Plus (Const 0) x) = simplify x
+  simplifyBinExp (BinExpr Plus x (Const 0)) = simplify x
+  simplifyBinExp (BinExpr Minus x (Const 0)) = simplify x
+  simplifyBinExp (BinExpr Multiply (Const 1) x) = simplify x
+  simplifyBinExp (BinExpr Multiply x (Const 1)) = simplify x
+  simplifyBinExp (BinExpr Multiply (Const 0) _) = Const 0
+  simplifyBinExp (BinExpr Multiply _ (Const 0)) = Const 0
+  simplifyBinExp (BinExpr Divide x (Const 1)) = simplify x
+  simplifyBinExp (BinExpr Power (Const 1) _) = (Const 1)
+  simplifyBinExp (BinExpr Power (Const 0) _) = (Const 0)
+  simplifyBinExp (BinExpr Power x (Const 1)) = simplify x
+  simplifyBinExp (BinExpr Power x (Const 0)) = (Const 1)
+  simplifyBinExp exp = exp
 simplify x = x
 
-simplifyPlus (Const 0) x = x
-simplifyPlus x (Const 0) = x
-simplifyPlus x y = BinExpr Plus x y
-
-simplifyMinus x (Const 0) = x
-simplifyMinus x y = BinExpr Minus x y
-
-simplifyMultiply (Const 1) x = x
-simplifyMultiply x (Const 1) = x
-simplifyMultiply (Const 0) _ = Const 0
-simplifyMultiply _ (Const 0) = Const 0
-simplifyMultiply x y = BinExpr Multiply x y
-
-simplifyDivide x (Const 1) = x
-simplifyDivide x y = BinExpr Divide x y
-
-simplifyPower (Const 1) _ = Const 1
-simplifyPower (Const 0) _ = Const 0
-simplifyPower x (Const 0)  = Const 1
-simplifyPower x (Const 1)  = x
-simplifyPower x y = BinExpr Power x y
-
-simplifySqrt (Const 0) = Const 0
-simplifySqrt (Const 1) = Const 1
-simplifySqrt x = SquareRoot x
 
 casesEval :: (Floating a, Ord a) => [(Expr a, Either Error a)]
 casesEval = [(Const 12, Right 12), 
