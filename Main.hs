@@ -136,6 +136,53 @@ resolveOperation exp1 op exp2 env =
     (Left msg, _) -> ans1
     (Right d1, Right d2) -> Right $ d1 `op` d2
 
+simplify :: (Eq a, Fractional a, Ord a) => Expr a -> Expr a
+simplify expr =
+  case expr of
+    Const a -> Const a
+    Var x -> Var x
+    -- Plus - *
+    Bin exp Plus (Const 0.0) -> simplify exp
+    Bin (Const 0.0) Plus exp -> simplify exp
+    Bin exp1 Plus exp2 -> Bin (simplify exp1) Plus (simplify exp2)
+    -- Minus - *
+    
+    Bin exp Minus (Const 0.0) -> simplify exp
+    Bin (Const 0.0) Minus (Const a) -> Const ((-1) * a)
+    -- Bin exp Minus (Const a) -> if a < 0 then Bin (simplify exp) Plus (Const ((-1) * a)) else Bin (simplify exp) Minus (Const a)
+    Bin exp1 Minus exp2 -> if exp1 == exp2 then Const 0 else Bin (simplify exp1) Minus (simplify exp2)
+    -- Mult - *
+    Bin (Const 1.0) Mult exp -> simplify exp
+    Bin exp Mult (Const 1.0) -> simplify exp
+    Bin exp Mult (Const 0.0) -> Const 0.0
+    Bin (Const 0.0) Mult exp -> Const 0.0
+    Bin exp1 Mult exp2 -> Bin (simplify exp1) Mult (simplify exp2)
+    -- Div - *
+    Bin exp Div (Const 1.0) -> simplify exp
+    Bin (Const 0.0) Div (Const a) -> Const 0.0
+    Bin exp1 Div exp2 -> Bin (simplify exp1) Div (simplify exp2)
+    -- Sqrt - *
+    Sqrt (Const 0.0) -> Const 0.0
+    Sqrt (Const 1.0) -> Const 1.0
+    Sqrt exp -> Sqrt $ simplify exp
+
+   
+  
+casesSimplify :: (RealFloat a, Ord a, Show a) => [(Expr a, Expr a)]
+casesSimplify = [
+  (Bin (Const 1.0) Plus (Bin (Const 0.0) Plus (Const 1.0)), Bin (Const 1.0) Plus (Const 1.0)),
+  (Bin (Const 1.0) Minus (Bin (Const 0.0) Minus (Const 1.0)), Bin (Const 1.0) Minus (Const (-1.0))),
+  (Bin (Const 1.0) Minus (Bin (Const 1.0) Minus (Const 0.0)), Bin (Const 1.0) Minus (Const 1.0)),
+  (Sqrt (Const 1.0), Const 1.0),
+  (Sqrt (Const 0.0), Const 0.0),
+  (Bin (Const 3.0) Mult (Const 0.0), Const 0.0),
+  (Bin (Const 0.0) Mult (Sqrt (Const 7.0)), Const 0.0),
+  (Bin (Const 0) Div (Var "x"), Bin (Const 0) Div (Var "x")),
+  (Bin (Bin (Const 1.0) Plus (Const 7.0)) Mult (Const 1), Bin (Const 1.0) Plus (Const 7.0)),
+  (Bin (Var "x") Minus (Var "x"), Const 0.0),
+  (Bin (Var "y") Div (Const 1.0), Var "y")
+  ]
+
 
 cases :: (Floating a, Ord a, Fractional a, Show a) => [(Expr a, [(String, a)] ,Either Error a)]
 cases = [
@@ -155,11 +202,19 @@ test expr env expected =
     unless (expected == actual) $ describeFailure actual
   where 
     describeFailure actual = 
-      printf "eval (%s) should be %s but it was %s" (show expr) (show expected) (show actual) 
+      printf "eval (%s) should be %s but it was %s\n" (show expr) (show expected) (show actual) 
   
+testSimplify :: (Show a, Eq a,  Fractional a, Ord a) => Expr a -> Expr a -> IO ()
+testSimplify expr expected =
+  let actual = simplify expr in 
+    unless (expected == actual) $ describeFailure actual
+  where 
+    describeFailure actual = 
+      printf "eval (%s) should be %s but it was %s\n" (show expr) (show expected) (show actual)
 
 main :: IO () 
 main = do 
   mapM_ (\(expr, env ,expected) -> test expr env expected) cases
+  mapM_ (uncurry testSimplify) casesSimplify
   --mapM_ (uncurry test) cases 
   
