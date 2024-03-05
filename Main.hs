@@ -98,38 +98,38 @@ simplify x = x
 
 cases :: RealFloat a => [((Expr a, [(String, a)]), Either Error Double)]
 cases = [
-  ((Number 10, []), Right 10),
-  ((Number $ -5, []), Right $ -5),
-  ((Root (Number 16), []), Right 4),
-  ((Root (Number $ -9), []), Left NegRoot),
-  ((BinOp (Number 5) (Number 3) Plus, []), Right 8),
-  ((BinOp (Number 7) (Number 2) Minus, []), Right 5),
-  ((BinOp (Number 2) (Number 4) Mul, []), Right 8),
-  ((BinOp (Number 10) (Number 2) Div, []), Right 5),
-  ((BinOp (Number 10) (Number 0) Div, []), Left ZeroDiv),
-  ((BinOp (Number 2) (Number 3) Pow, []), Right 8),
-  ((BinOp (Number $ -2) (Number 0.5) Pow, []), Left NegRoot),
+  ((10, []), Right 10),
+  ((-5, []), Right $ -5),
+  ((Root 16, []), Right 4),
+  ((Root $ -9, []), Left NegRoot),
+  ((BinOp 5 3 Plus, []), Right 8),
+  ((BinOp 7 2 Minus, []), Right 5),
+  ((BinOp 2 4 Mul, []), Right 8),
+  ((BinOp 10 2 Div, []), Right 5),
+  ((BinOp 10 0 Div, []), Left ZeroDiv),
+  ((BinOp 2 3 Pow, []), Right 8),
+  ((BinOp (-2) (Number 0.5) Pow, []), Left NegRoot),
   (
-    (BinOp (Root (Number 64)) (Number 2) Plus, []),
+    (BinOp (Root 64) 2 Plus, []),
     Right 10
   ),
   (
-    (BinOp (Root (Number $ -9)) (Number 3) Mul, []),
+    (BinOp (Root $ -9) 3 Mul, []),
     Left NegRoot
   ),
   (
-    (BinOp (BinOp (Number 5) (Number 0) Div) (Number 3) Mul, []),
+    (BinOp (BinOp 5 0 Div) 3 Mul, []),
     Left ZeroDiv
   ),
   (
-    (BinOp (BinOp (Number 4) (Number 3) Mul) (Number 2) Div, []),
+    (BinOp (BinOp 4 3 Mul) 2 Div, []),
     Right 6
   ),
   ((Variable "x", [("x", 10)]), Right 10),
   ((Variable "x", []), Left $ UndefinedVariable "x"),
-  ((BinOp (Variable "x") (Number 2) Plus, [("x", 10)]), Right 12),
-  ((BinOp (Variable "x") (Number 2) Plus, []), Left $ UndefinedVariable "x"),
-  ((BinOp (Number 2) (Variable "x") Div, [("x", 0)]), Left ZeroDiv),
+  ((BinOp (Variable "x") 2 Plus, [("x", 10)]), Right 12),
+  ((BinOp (Variable "x") 2 Plus, []), Left $ UndefinedVariable "x"),
+  ((BinOp 2 (Variable "x") Div, [("x", 0)]), Left ZeroDiv),
   ((BinOp (Variable "x") (Variable "x") Plus, [("x", 10)]), Right 20),
   ((BinOp (Variable "x") (Variable "y") Mul, [("x", 10), ("y", 2)]), Right 20)
   ]
@@ -148,7 +148,7 @@ casesSimplify = [
   (Root (BinOp 0 5 Mul), 0),
   (Root (BinOp 1 1 Mul), 1),
   (Variable "x", Variable "x"),
-  (Number 10, Number 10)
+  (10, 10)
   ]
 
 test :: (RealFloat a, Show a) => (Expr a, [(String, a)]) -> Either Error a -> IO ()
