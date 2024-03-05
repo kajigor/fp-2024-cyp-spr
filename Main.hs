@@ -1,4 +1,4 @@
-module Main where 
+module Main where
 
 import Text.Printf (printf)
 import Control.Monad (unless)
@@ -13,8 +13,8 @@ newtype Either2 a b = Either2 (Either a b) deriving (Show)
 
 instance Functor (Either2 a) where
     fmap :: (b -> c) -> Either2 a b -> Either2 a c
-    fmap f (Either2 (Left x)) = Either2(Left x)
-    fmap f (Either2 (Right x)) = Either2(Right (f x))
+    fmap f (Either2 (Left x)) = Either2 (Left x)
+    fmap f (Either2 (Right x)) = Either2 (Right (f x))
 
 {-
 
@@ -64,24 +64,34 @@ data Expr a = Var String
               deriving (Eq)
 
 
-instance (Show a) => Show (Expr a) where 
+instance (Show a) => Show (Expr a) where
   show (Var ex) = ex
   show (Const ex) = show ex
   show (Plus ex1 ex2) = "(" ++ show ex1 ++ " + " ++ show ex2 ++ ")"
   show (Minus ex1 ex2) = "(" ++ show ex1 ++ " - " ++ show ex2 ++ ")"
   show (Mult ex1 ex2) = "(" ++ show ex1 ++ " * " ++ show ex2 ++ ")"
   show (Div ex1 ex2) = "(" ++ show ex1 ++ " / " ++ show ex2 ++ ")"
-  show (Pow ex1 ex2) = "(" ++ show ex1 ++ " ** " ++ show ex2 ++ ")" 
+  show (Pow ex1 ex2) = "(" ++ show ex1 ++ " ** " ++ show ex2 ++ ")"
   show (Root ex) = "(" ++ "root " ++ show ex ++ ")"
 
+
+instance (Num a) => Num (Expr a) where
+  (+) = Plus
+  (*) = Mult
+  negate = Minus (Const 0)
+  abs expr = undefined -- is possible to define, but only with the evaluation
+  signum expr = undefined -- same reason
+  fromInteger = Const . fromInteger
+
+
 data Error = DivideByZero String
-            | NegativeFromRoot String 
-            | PowNaN String 
+            | NegativeFromRoot String
+            | PowNaN String
             | VariableNotApplied String
             | ComplexError Error Error
             deriving (Eq)
 
-instance Show Error where 
+instance Show Error where
   show (DivideByZero msg) = "DivideByZero error " ++ show msg
   show (NegativeFromRoot msg) = "NegativeFromRoot error " ++ show msg
   show (PowNaN msg) = "PowNaN error " ++ show msg
@@ -107,7 +117,7 @@ resolve (Right (Root (Const n))) _
 resolve (Right (Plus (Const n1) (Const n2))) _ = Right $ Const (n1 + n2)
 resolve (Right (Minus (Const n1) (Const n2))) _ = Right $ Const (n1 - n2)
 resolve (Right (Mult (Const n1) (Const n2))) _ = Right $ Const (n1 * n2)
-resolve (Right (Div (Const n1) (Const n2))) _ 
+resolve (Right (Div (Const n1) (Const n2))) _
   | n2 == 0 = Left (DivideByZero ("(div of " ++ show n1 ++ " and " ++ show n2 ++ ")"))
   | otherwise = Right $ Const (n1 / n2)
 
@@ -131,7 +141,7 @@ exprToNum :: Expr a -> a
 exprToNum (Const n) = n
 
 eval :: (RealFloat a, Ord a, Show a) => Expr a -> [(String, a)] -> Either Error a
-eval expr vars = exprToNum <$> resolve (Right expr) vars 
+eval expr vars = exprToNum <$> resolve (Right expr) vars
 
 simplify :: (RealFloat a, Ord a, Show a) => Expr a -> Expr a
 
@@ -162,8 +172,8 @@ simplify (Root (Const 0)) = Const 0
 
 simplify (Root expr) = Root $ simplify expr
 simplify (Plus expr1 expr2) = Plus (simplify expr1) (simplify expr2) -- I wonder if there is a prettier way
-simplify (Minus expr1 expr2) = Minus (simplify expr1) (simplify expr2) 
-simplify (Mult expr1 expr2) = Mult (simplify expr1) (simplify expr2) 
+simplify (Minus expr1 expr2) = Minus (simplify expr1) (simplify expr2)
+simplify (Mult expr1 expr2) = Mult (simplify expr1) (simplify expr2)
 simplify (Div expr1 expr2) = if (simple1 == simple2) && (simple1 /= Const 0) && (simple2 /= Const 0)
                              then Const 1 else Div simple1 simple2
                               where simple1 = simplify expr1
@@ -182,7 +192,7 @@ cases = [
     (Div (Mult (Const 7.0) (Const 2.0)) (Minus (Const 4.0) (Const 4.0)), [], Left $ DivideByZero "(div of 14.0 and 0.0)"),
     (Div (Pow (Const (-1.0)) (Const 0.5)) (Root (Const 4.0)), [], Left $ PowNaN "(pow of -1.0 and 0.5)"),
     (Plus (Root (Const (-100500))) (Div (Const 100) (Const 0)), [], Left $ ComplexError (NegativeFromRoot "(root of -100500.0)") (DivideByZero "(div of 100.0 and 0.0)")),
-  
+
     (Var "A", [("A", 1)], Right 1),
     (Div (Var "A") (Var "B"), [("A", 1), ("B", 0)], Left  $ DivideByZero "(div of 1.0 and 0.0)"),
     (Var "A", [], Left $ VariableNotApplied "(variable A)"),
@@ -218,14 +228,14 @@ simplifyCases = [
   (Div (Var "x") (Var "x"), Const 1.0)
   ]
 
-test :: (RealFloat a, Ord a, Show a) => Expr a -> [(String, a)] -> Either Error a -> IO () 
-test expr vars expected = 
-    let actual = eval expr vars in 
+test :: (RealFloat a, Ord a, Show a) => Expr a -> [(String, a)] -> Either Error a -> IO ()
+test expr vars expected =
+    let actual = eval expr vars in
     unless (expected == actual) $ describeFailure actual
-  where 
-    describeFailure actual = 
-      printf "eval (%s) should be %s but it was %s\n" (show expr) (show expected) (show actual) 
-  
+  where
+    describeFailure actual =
+      printf "eval (%s) should be %s but it was %s\n" (show expr) (show expected) (show actual)
+
 testSimplify :: (RealFloat a, Ord a, Show a) => Expr a -> Expr a -> IO ()
 testSimplify expr expected =
     let actual = simplify expr in
@@ -234,8 +244,8 @@ testSimplify expr expected =
     describeFailure actual =
       printf "Simplify (%s) should be %s but it was %s\n" (show expr) (show expected) (show actual)
 
-main :: IO () 
-main = do 
+main :: IO ()
+main = do
   mapM_ (\(expr, expected, vars) -> test expr expected vars) cases
   mapM_ (uncurry testSimplify) simplifyCases
   putStrLn "Done"
