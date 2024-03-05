@@ -228,6 +228,20 @@ cases = [
  (CE (Arg 3) Mul (Var "z"), Left (VariableDoesNotExist "z"))
  ]
 
+
+casesSimplify = [
+  (Var "x", Var "x"),
+  (CE (Var "x") Plus (Arg 0), Var "x"),
+  (CE (Arg 0) Plus (Var "x"), Var "x"),
+  (CE (Var "x") Mul (Arg 1), Var "x"),
+  (CE (Arg 1) Mul (Var "x"), Var "x"),
+  (CE (Var "x") Min (Arg 0), Var "x"),
+  (CE (Arg 0) Min (Var "x"), Marg Neg (Var "x")),
+  (CE (Var "x") Mul (Arg 0), Arg 0),
+  (CE (Arg 0) Mul (Var "x"), Arg 0),
+  (CE (Var "x") Div (Arg 1), Var "x"),
+  ]
+
 --test :: Expr a -> Either (Error a) a -> IO ()
 test expr expected =
     let actual = eval expr [("x", 2), ("y", 0)] in
@@ -237,6 +251,15 @@ test expr expected =
       printf "eval (%s) should be %s but it was %s" (show expr) (show expected) (show actual)
 
 
+testSimplify expr expected =
+    let actual = simplify expr in
+    unless (expected == actual) $ describeFailure actual
+  where
+    describeFailure actual =
+      printf "eval (%s) should be %s but it was %s" (show expr) (show expected) (show actual)
+
+
 main :: IO ()
 main = do
   mapM_ (uncurry test) cases
+  mapM_ (uncurry testSimplify) casesSimplify
