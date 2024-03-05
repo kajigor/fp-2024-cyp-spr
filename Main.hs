@@ -34,9 +34,9 @@ instance Show Operator2 where
 
 
 -- Type for expression
-data Expr = Arg Double | Var String | Marg Operator1 Expr | CE Expr Operator2 Expr
+data Expr a = Arg a | Var String | Marg Operator1 (Expr a) | CE (Expr a) Operator2 (Expr a)
 
-instance Show Expr where
+instance Show a => Show (Expr a) where
   show (Arg value) = show value
   show (Var variable) = show variable
   show (Marg op value)
@@ -44,7 +44,7 @@ instance Show Expr where
     | op == Sqrt = (show op) ++ "(" ++ (show value) ++ ")"
   show (CE expr1 op expr2) = (show expr1) ++ (show op) ++ (show expr2)
 
-instance Eq Expr where
+instance Eq a => Eq (Expr a) where
   Arg value1 == Arg value2 = value1 == value2
   Var variable1 == Var variable2 = variable1 == variable2
   Marg op1 value1 == Marg op2 value2 =
@@ -53,14 +53,20 @@ instance Eq Expr where
    expr11 == expr21 && op1 == op2 && expr12 == expr22
   _ == _ = False
 
+instance Num a => Num (Expr a) where
+  expr1 + expr2 = CE expr1 Plus expr2
+  expr1 * expr2 = CE expr1 Mul expr2
+  fromInteger value = Arg (fromInteger value)
+  negate expr = Marg Neg expr
 
-data Error =
-  OutOfPossibleValuesError Operator1 Double
-  | ZeroDivisionError Double
-  | IncorrectDegreeOfValue Double
+
+data Error a =
+  OutOfPossibleValuesError Operator1 a
+  | ZeroDivisionError a
+  | IncorrectDegreeOfValue a
   | VariableDoesNotExist String
 
-instance Show Error where
+instance Show a => Show (Error a) where
   show (OutOfPossibleValuesError op value) = "OutOfPossibleValuesError: operator "
    ++ (show op) ++ " can not handle expression " ++ (show value)
   show (ZeroDivisionError chislitel) = "ZeroDivisionError: numerator "
@@ -70,7 +76,7 @@ instance Show Error where
   show (VariableDoesNotExist variable) = "VariableDoesNotExist: variable "
    ++ variable ++ " is not defined"
 
-instance Eq Error where
+instance Eq a => Eq (Error a) where
   OutOfPossibleValuesError op1 value1 == OutOfPossibleValuesError op2 value2 =
    op1 == op2 && value1 == value2
   ZeroDivisionError chislitel1 == ZeroDivisionError chislitel2 =
@@ -80,7 +86,7 @@ instance Eq Error where
   _ == _ = False
 
 
-defineOperationEvaluator :: Operator2 -> (Double -> Double -> Double)
+--defineOperationEvaluator :: Num a => Operator2 -> (a -> a -> a)
 defineOperationEvaluator op
   | op == Div = (/)
   | op == Mul = (*)
@@ -89,7 +95,7 @@ defineOperationEvaluator op
   | op == In = (**)
 
 
-eval :: Expr -> [(String, Double)] -> Either Error Double
+--eval :: Num a => Expr a -> [(String, a)] -> Either Error a
 eval (Arg value) list = Right value
 
 eval (Var variable) list = let search_result = Data.Map.lookup variable (fromList list)
@@ -118,7 +124,7 @@ eval (CE expr1 op expr2) list = case (eval expr1 list) of
   Left exception -> Left exception
 
 
-rule :: Expr -> Expr
+rule :: Eq a => Num a => Expr a -> Expr a
 rule (Arg value) = Arg value
 
 rule (Var variable) = Var variable
@@ -151,7 +157,7 @@ rule (CE expr1 op expr2)
   | otherwise = CE expr1 op expr2
 
 
-simplify :: Expr -> Expr
+simplify :: Eq a => Num a => Expr a -> Expr a
 simplify (Arg value) = rule (Arg value)
 
 simplify (Var variable) = rule (Var variable)
@@ -161,7 +167,7 @@ simplify (Marg anyOperator1 expr) = rule (Marg anyOperator1 (simplify expr))
 simplify (CE expr1 op expr2) = rule (CE (simplify expr1) op (simplify expr2))
 
 
-cases :: [(Expr, Either Error Double)]
+--cases :: Eq a => Num a => [(Expr a, Either (Error a) a)]
 cases = [
  -- Double as expression = Double
  (Arg 56, Right 56),
@@ -217,7 +223,7 @@ cases = [
  (CE (Arg 3) Mul (Var "z"), Left (VariableDoesNotExist "z"))
  ]
 
-test :: Expr -> Either Error Double -> IO ()
+--test :: Expr a -> Either (Error a) a -> IO ()
 test expr expected =
     let actual = eval expr [("x", 2), ("y", 0)] in
     unless (expected == actual) $ describeFailure actual
