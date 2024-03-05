@@ -40,12 +40,16 @@ instance Functor (MyArrow f) where
 {-
   1) fmap id = id
   
-  fmap id (a -> b) = id . a -> b = a -> b 
+  h has type t -> a
+  f has type a -> b
+  g has type b -> c
+
+  fmap id h = id . h = h 
 
 
   2) fmap (f . g)  ==  fmap f . fmap g
 
-  fmap (f . g) (a -> b) =  f . g . (a -> b) = fmap f (g . (a-> b)) = fmap f (fmap g (a-> b))
+  fmap (f . g) h =  f . g . h = fmap f (g . h) = fmap f (fmap g h)
 
 -}
 
@@ -112,11 +116,8 @@ resolve (Right (Pow (Const n1) (Const n2))) _
   | otherwise = Right (Const (n1 ** n2))
 
 resolve (Right (Var v)) vars
-  | isNothing lookup = Left (VariableNotApplied ("(variable " ++ v ++ ")"))
-  | otherwise = Right $ Const (snd $ fromJust lookup)
-  where
-    lookup = find (\(x, _) -> x == v) vars
-
+  | isNothing (lookup v vars) = Left (VariableNotApplied ("(variable " ++ v ++ ")"))
+  | otherwise = Right $ Const (fromJust $ lookup v vars)
 
 resolve (Right (Root expr)) vars = resolve (Root <$> resolve (Right expr) vars) vars -- propagate error and recursive Root if correct
 resolve (Right (Plus expr1 expr2)) vars = resolve (andExprError Plus (resolve (Right expr1) vars) (resolve (Right expr2) vars)) vars
@@ -139,12 +140,12 @@ simplify (Var x) = Var x
 
 simplify (Plus (Const 0) expr) = simplify expr
 simplify (Plus expr (Const 0)) = simplify expr
-simplify (Plus (Const a) (Const b)) = if a - b == 0 then Const 0 else Minus (simplify (Const a)) (simplify (Const b))
+simplify (Plus (Const a) (Const b)) = if a + b == 0 then Const 0 else Minus (simplify (Const a)) (simplify (Const b))
 
 
 simplify (Minus (Const 0) expr) = simplify expr
 simplify (Minus expr (Const 0)) = simplify expr
-simplify (Minus (Const a) (Const b)) = if a == b then Const 0 else Minus (simplify (Const a)) (simplify (Const b))
+simplify (Minus (Const a) (Const b)) = if a - b == 0 then Const 0 else Minus (simplify (Const a)) (simplify (Const b))
 
 
 simplify (Mult (Const 0) expr) = Const 0
@@ -155,11 +156,6 @@ simplify (Mult expr (Const 1)) = simplify expr
 
 simplify (Div expr (Const 1)) = simplify expr
 simplify (Div (Const 0) expr) = if simplify expr /= Const 0 then Const 0 else Div (Const 0) (Const 0)
-simplify (Div expr1 expr2) = if (simple1 == simple2) && (simple1 /= Const 0) && (simple2 /= Const 0)
-                             then Const 1 else Div simple1 simple2
-  where simple1 = simplify expr1
-        simple2 = simplify expr2
--- same for the Pow
 
 simplify (Root (Const 1)) = Const 1
 simplify (Root (Const 0)) = Const 0
@@ -168,7 +164,10 @@ simplify (Root expr) = Root $ simplify expr
 simplify (Plus expr1 expr2) = Plus (simplify expr1) (simplify expr2) -- I wonder if there is a prettier way
 simplify (Minus expr1 expr2) = Minus (simplify expr1) (simplify expr2) 
 simplify (Mult expr1 expr2) = Mult (simplify expr1) (simplify expr2) 
-simplify (Div expr1 expr2) = Div (simplify expr1) (simplify expr2)
+simplify (Div expr1 expr2) = if (simple1 == simple2) && (simple1 /= Const 0) && (simple2 /= Const 0)
+                             then Const 1 else Div simple1 simple2
+                              where simple1 = simplify expr1
+                                    simple2 = simplify expr2
 simplify (Pow expr1 expr2) = Pow (simplify expr1) (simplify expr2)
 
 cases :: (RealFloat a, Ord a, Show a) => [(Expr a, [(String, a)], Either Error Double)]
@@ -185,6 +184,8 @@ cases = [
     (Plus (Root (Const (-100500))) (Div (Const 100) (Const 0)), [], Left $ ComplexError (NegativeFromRoot "(root of -100500.0)") (DivideByZero "(div of 100.0 and 0.0)")),
   
     (Var "A", [("A", 1)], Right 1),
+    (Div (Var "A") (Var "B"), [("A", 1), ("B", 0)], Left  $ DivideByZero "(div of 1.0 and 0.0)"),
+
     (Var "A", [], Left $ VariableNotApplied "(variable A)"),
     (Mult (Const 6) (Minus (Var "A") (Div (Pow (Var "A") (Var "C")) (Mult (Var "B") (Var "C")))), [("A", 1), ("B", 2), ("C", 3)], Right 5.0)
   ]
