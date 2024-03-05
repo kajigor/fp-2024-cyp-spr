@@ -11,6 +11,7 @@ data Expr = Num Double
           | Mul Expr Expr
           | Div Expr Expr
           | Pow Expr Expr
+          deriving (Eq)
 
 
 instance Show Expr where 
@@ -23,31 +24,10 @@ instance Show Expr where
   show (Pow expr1 expr2) = "(" ++ show expr1 ++ " ^ " ++ show expr2 ++ ")"
 
 
-instance Eq Expr where 
-  (Num x1) == (Num x2) = x1 == x2
-  (Sqrt expr1) == (Sqrt expr2) = expr1 == expr2
-  (Add e1 e2) == (Add e3 e4) = (e1 == e3 && e2 == e4) || (e1 == e4 && e2 == e3)
-  (Sub e1 e2) == (Sub e3 e4) = (e1 == e3 && e2 == e4)
-  (Mul e1 e2) == (Mul e3 e4) = (e1 == e3 && e2 == e4) || (e1 == e4 && e2 == e3)
-  (Div e1 e2) == (Div e3 e4) = (e1 == e3 && e2 == e4)
-  (Pow e1 e2) == (Pow e3 e4) = (e1 == e3 && e2 == e4)
-  _ == _ = False
-
-
-data Error = NegativeSquareRoot | DivisionByZero | ZeroToZeroPower
-
-
-instance Show Error where 
-  show NegativeSquareRoot = "NegativeSquareRoot"
-  show DivisionByZero = "DivisionByZero"
-  show ZeroToZeroPower = "ZeroToZeroPower"
-
-
-instance Eq Error where 
-  NegativeSquareRoot == NegativeSquareRoot = True
-  DivisionByZero == DivisionByZero = True
-  ZeroToZeroPower == ZeroToZeroPower = True
-  _ == _ = False
+data Error = NegativeSquareRoot 
+          | DivisionByZero 
+          | ZeroToZeroPower
+          deriving (Eq, Show)
 
 
 eval :: Expr -> Either Error Double 
