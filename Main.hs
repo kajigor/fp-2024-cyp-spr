@@ -13,6 +13,11 @@ instance Functor (MyEither a) where
   fmap f (L value) = L value
   fmap f (R value) = R (f value)
 
+-- Consider x is L a, then fmap id x = x (with definition of fmap for MyEither)
+--                              id x = x
+--          It means, that fmap id x = id x
+-- Consider x is R b, then fmap id x = id x (with definition of fmap for MyEither)
+--          It means, that fmap id x = id x
 
 -- Type for unary operator
 data Operator1 = Sqrt | Neg deriving (Eq)
