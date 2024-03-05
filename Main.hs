@@ -182,6 +182,10 @@ casesSimplify = [
                 , ((Variable "x" + 15) * 0, 0)
                 , ((Variable "z" * 0) + 3, 3)
                 , (1 * Variable "x", Variable "x")
+                , ((Variable "x" + 0) * 1, Variable "x")
+                , (Variable "x" - 0, Variable "x")
+                , (Binary Div (Variable "x") 1, Variable "x")
+                , (Binary Exp (Variable "x") 1, Variable "x")
                 ]
 
 testSimplify :: (Ord a, Floating a, Show a) => Expr a -> Expr a -> IO ()
