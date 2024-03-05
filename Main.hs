@@ -28,7 +28,6 @@ instance Show a => Show (Expr a) where
 
 instance Num a => Num (Expr a) where
   (+) e1 e2 = BinOp e1 e2 Plus
-  (-) :: Num a => Expr a -> Expr a -> Expr a
   (-) e1 e2 = BinOp e1 e2 Minus
   (*) e1 e2 = BinOp e1 e2 Mul
   negate e = BinOp (Number 0) e Minus
