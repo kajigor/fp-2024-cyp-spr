@@ -185,8 +185,9 @@ cases = [
   
     (Var "A", [("A", 1)], Right 1),
     (Div (Var "A") (Var "B"), [("A", 1), ("B", 0)], Left  $ DivideByZero "(div of 1.0 and 0.0)"),
-
     (Var "A", [], Left $ VariableNotApplied "(variable A)"),
+    (Var "A", [("A", 1), ("B", 2)], Right 1.0), -- priority to the first occurrence
+
     (Mult (Const 6) (Minus (Var "A") (Div (Pow (Var "A") (Var "C")) (Mult (Var "B") (Var "C")))), [("A", 1), ("B", 2), ("C", 3)], Right 5.0)
   ]
 
