@@ -49,14 +49,13 @@ instance (Num a) => Num (Expr a) where
   negate = Multiply (Const (-1))
   
 
-data Error = DivisorIsZero | SquareRootIsNegative | PowerBaseIsNegative | VariableIsUndefined | VariableIsAmbiguous deriving Eq
+data Error = DivisorIsZero | SquareRootIsNegative | PowerBaseIsNegative | VariableIsUndefined deriving Eq
 instance Show Error where
   show :: Error -> String
   show DivisorIsZero = "Divisor is equal zero"
   show SquareRootIsNegative  = "The root can't be negative"
   show PowerBaseIsNegative  = "Power base can't be negative"
   show VariableIsUndefined = "Variable is undefined"
-  show VariableIsAmbiguous = "Variable is ambiguous"
 
 
 performOp :: (a -> a -> a) -> Either Error a -> Either Error a -> Either Error a
@@ -88,14 +87,9 @@ checkFirstArgIsNegative err a _ = Just (fromLeft err a)
 
 
 getVar :: (Eq a) => String -> [(String, a)] -> Either Error a
-getVar name map =
-  let le = lookup name map
-      ri = lookup name (reverse map)
-  in case le of
-  Just x
-    | le == ri -> Right x
-    | otherwise -> Left VariableIsAmbiguous
-  Nothing -> Left VariableIsUndefined
+getVar name map = case lookup name map of
+  Just x -> Right x
+  _ -> Left VariableIsUndefined
 
 
 
@@ -179,8 +173,8 @@ evalCases :: Fractional a => [(Expr a, Either Error a)]
 evalCases = [
   (Const 1, Right 1.0),
   (Var "x", Right 1.0),
+  (Subtract (Var "twice") (Var "twice"), Right 0.0),
   (Var "undefined", Left VariableIsUndefined),
-  (Var "ambiguous", Left VariableIsAmbiguous),
   (Add (Const 1) (Const 1), Right 2.0),
   (Subtract (Const 1) (Const 1), Right 0.0),
   (Multiply (Const 2) (Const 3), Right 6.0),
@@ -231,7 +225,7 @@ simplifyCases = [
 
 testEval :: (Show a, Ord a, Floating a) => Expr a -> Either Error a -> IO ()
 testEval expr expected =
-    let testMap = [("x", 1), ("y", 2), ("z", 3), ("ambiguous", -1), ("ambiguous", -2)]
+    let testMap = [("x", 1), ("y", 2), ("z", 3), ("twice", 2), ("twice", 3)]
         actual = eval expr testMap in
     unless (expected == actual) $ describeFailure actual
   where
