@@ -49,13 +49,14 @@ instance (Num a) => Num (Expr a) where
   negate = Multiply (Const (-1))
   
 
-data Error = DivisorIsZero | SquareRootIsNegative | PowerBaseIsNegative | VariableIsUndefined deriving Eq
+data Error = DivisorIsZero | SquareRootIsNegative | PowerBaseIsNegative | VariableIsUndefined | VariableIsAmbiguous deriving Eq
 instance Show Error where
   show :: Error -> String
   show DivisorIsZero = "Divisor is equal zero"
   show SquareRootIsNegative  = "The root can't be negative"
   show PowerBaseIsNegative  = "Power base can't be negative"
   show VariableIsUndefined = "Variable is undefined"
+  show VariableIsAmbiguous = "Variable is ambiguous"
 
 
 performOp :: (a -> a -> a) -> Either Error a -> Either Error a -> Either Error a
@@ -86,16 +87,23 @@ checkFirstArgIsNegative err (Right x) _
 checkFirstArgIsNegative err a _ = Just (fromLeft err a)
 
 
-getVar :: [(String, a)] -> String -> Either Error a
-getVar map name = case filter (\x -> fst x == name) map of
-  xs:x -> Right (snd xs)
-  _ -> Left VariableIsUndefined
+getVar :: (Eq a) => String -> [(String, a)] -> Either Error a
+getVar name map =
+  let le = lookup name map
+      ri = lookup name (reverse map)
+  in case le of
+  Just x
+    | le == ri -> Right x
+    | otherwise -> Left VariableIsAmbiguous
+  Nothing -> Left VariableIsUndefined
+
+
 
 
 eval :: (Ord a, Floating a) => Expr a -> [(String, a)] -> Either Error a
 eval expr map = case expr of
   Const val -> Right val
-  Var name -> getVar map name
+  Var name -> getVar name map
   Add a b -> performOp (+) (eval a map) (eval b map)
   Subtract a b -> performOp (-) (eval a map) (eval b map)
   Multiply a b -> performOp (*) (eval a map) (eval b map)
@@ -104,23 +112,21 @@ eval expr map = case expr of
   Square a -> performOpWithCheck (checkFirstArgIsNegative SquareRootIsNegative) (**) (eval a map) (Right 0.5)
 
 
-simplifyAdd :: (Eq a, Fractional a) => Expr a -> Expr a
-simplifyAdd expr = case expr of
-  Add (Const 0.0) x -> x
-  Add x (Const 0.0) -> x
-  _ -> expr
+simplifyAdd :: (Eq a, Fractional a) => Expr a -> Expr a -> Expr a
+simplifyAdd (Const 0.0) x = x
+simplifyAdd x (Const 0.0) = x
+simplifyAdd x y = Add x y
 
-simplifySubtract :: (Eq a, Fractional a) => Expr a -> Expr a
-simplifySubtract expr = case expr of
-  Subtract (Const x) (Const y)
-    | x == y -> Const 0.0
-    | y == 0.0 -> Const x
-    | otherwise -> expr
-  Subtract (Var x) (Var y) 
-    | x == y -> Const 0.0
-    | otherwise -> expr
-  Subtract x (Const 0.0) -> x
-  _ -> expr
+simplifySubtract :: (Eq a, Fractional a) => Expr a -> Expr a -> Expr a
+simplifySubtract (Const x) (Const y) 
+    | x == y = Const 0.0
+    | y == 0.0 = Const x
+    | otherwise = Subtract (Const x) (Const y)
+simplifySubtract (Var x) (Var y)
+    | x == y = Const 0.0
+    | otherwise = Subtract (Var x) (Var y)
+simplifySubtract x (Const 0.0) = x
+simplifySubtract x y = Subtract x y
 
 
 chooseMultiplyByZeroSimplification :: Fractional a => Expr a -> Expr a -> Expr a
@@ -129,44 +135,41 @@ chooseMultiplyByZeroSimplification initExpr expr = case expr of
   Var _ -> Const 0.0
   _ -> initExpr
 
-simplifyMultiply :: (Eq a, Fractional a) => Expr a -> Expr a
-simplifyMultiply expr = case expr of
-  Multiply (Const 0.0) x -> chooseMultiplyByZeroSimplification expr x
-  Multiply x (Const 0.0) -> chooseMultiplyByZeroSimplification expr x
-  Multiply (Const 1.0) x -> x
-  Multiply x (Const 1.0) -> x
-  _ -> expr
+simplifyMultiply :: (Eq a, Fractional a) => Expr a -> Expr a -> Expr a
+simplifyMultiply (Const 0.0) x = chooseMultiplyByZeroSimplification (Multiply (Const 0.0) x) x
+simplifyMultiply x (Const 0.0) = chooseMultiplyByZeroSimplification (Multiply x (Const 0.0)) x
+simplifyMultiply (Const 1.0) x = x
+simplifyMultiply x (Const 1.0) = x
+simplifyMultiply x y = Multiply x y
 
-simplifyDivide :: (Eq a, Fractional a) => Expr a -> Expr a
-simplifyDivide expr = case expr of
-  Divide (Const 0.0) (Const x)
-    | x /= 0 -> Const 0.0
-    | otherwise -> expr 
-  Divide x (Const 1.0) -> x
-  Divide (Const x) (Const y)
-    | x == y && x /= 0.0 -> Const 1.0
-    | otherwise -> expr
-  _ -> expr
+simplifyDivide :: (Eq a, Fractional a) => Expr a -> Expr a -> Expr a
+simplifyDivide (Const 0.0) (Const x)
+    | x /= 0 = Const 0.0
+    | otherwise = Divide (Const 0.0) (Const x)
+simplifyDivide x (Const 1.0) = x
+simplifyDivide (Const x) (Const y)
+    | x == y && x /= 0.0 = Const 1.0
+    | otherwise = Divide (Const x) (Const y)
+simplifyDivide x y = Divide x y
 
 
 
-simplifyPower :: (Fractional a, Ord a) => Expr a -> Expr a
-simplifyPower expr = case expr of
-  Power (Const x) (Const 1.0)
-     | x >= 0.0 -> Const x
-     | otherwise -> expr
-  Power (Const x) (Const 0.0)
-     | x > 0.0 -> Const 1.0
-     | otherwise -> expr
-  _ -> expr
+simplifyPower :: (Fractional a, Ord a) => Expr a -> Expr a -> Expr a
+simplifyPower (Const x) (Const 1.0)
+    | x >= 0.0 = Const x
+    | otherwise = Power (Const x) (Const 1.0)
+simplifyPower (Const x) (Const 0.0)
+     | x > 0.0 = Const 1.0
+     | otherwise = Power (Const x) (Const 0.0)
+simplifyPower x y = Power x y
 
 simplify :: (Ord a, Fractional a) =>  Expr a -> Expr a
 simplify expr = case expr of
-  Add l r -> simplifyAdd (Add (simplify l) (simplify r))
-  Subtract l r -> simplifySubtract (Subtract (simplify l) (simplify r))
-  Multiply l r -> simplifyMultiply (Multiply (simplify l) (simplify r))
-  Divide l r -> simplifyDivide (Divide (simplify l) (simplify r))
-  Power l r -> simplifyPower (Power (simplify l) (simplify r))
+  Add l r -> simplifyAdd (simplify l) (simplify r)
+  Subtract l r -> simplifySubtract (simplify l) (simplify r)
+  Multiply l r -> simplifyMultiply (simplify l) (simplify r)
+  Divide l r -> simplifyDivide (simplify l) (simplify r)
+  Power l r -> simplifyPower (simplify l) (simplify r)
   Square l -> Square (simplify l)
   _ -> expr
 
@@ -177,6 +180,7 @@ evalCases = [
   (Const 1, Right 1.0),
   (Var "x", Right 1.0),
   (Var "undefined", Left VariableIsUndefined),
+  (Var "ambiguous", Left VariableIsAmbiguous),
   (Add (Const 1) (Const 1), Right 2.0),
   (Subtract (Const 1) (Const 1), Right 0.0),
   (Multiply (Const 2) (Const 3), Right 6.0),
@@ -227,7 +231,7 @@ simplifyCases = [
 
 testEval :: (Show a, Ord a, Floating a) => Expr a -> Either Error a -> IO ()
 testEval expr expected =
-    let testMap = [("x", 1), ("y", 2), ("z", 3)]
+    let testMap = [("x", 1), ("y", 2), ("z", 3), ("ambiguous", -1), ("ambiguous", -2)]
         actual = eval expr testMap in
     unless (expected == actual) $ describeFailure actual
   where
