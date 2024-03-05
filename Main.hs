@@ -1,6 +1,6 @@
 import Text.Printf (printf)
 import Control.Monad (unless)
-
+import Data.List
 
 data Either1 a b = Left1 a | Right1 b
 
@@ -63,28 +63,33 @@ instance Show a => Show (Expr a) where
           (Var v)         -> printf "%s" (show v)
 
 
-data Error a = DivisionByZero (Expr a) (Expr a) | RootOfNegative (Expr a) | UndefinedVariable String
+data Error a = DivisionByZero (Expr a) (Expr a) | RootOfNegative (Expr a) | UndefinedVariable String | InvalidMapping [(String, a)]
             deriving Eq
 
 instance Show a => Show (Error a) where 
   show (DivisionByZero e1 e2) = printf "Error when dividing %s by %s. Denominator was equal to zero" (show e1) (show e2)
   show (RootOfNegative e)     = printf "Error when taking square root. Expression %s was negative" (show e)
   show (UndefinedVariable v)  = printf "Undefined variable %s" v
+  show (InvalidMapping ls)    = printf "Incorrect mapping of variables. The following variables have multiple values: %s" (show ls)
  
 
+
 eval :: (Floating a, Ord a) => Expr a -> [(String, a)] -> Either (Error a) a 
-eval e ls = case e of
-  Const c      ->  Right c
-  Plus e1 e2   -> perfOp (\ x y -> Right $ x+y ) e1 e2
-  Minus e1 e2  -> perfOp (\ x y -> Right $ x-y ) e1 e2
-  Mult e1 e2   -> perfOp (\ x y -> Right $ x*y ) e1 e2
-  Div e1 e2    -> perfOp (\ x y -> if y /= 0 then Right (x/y) else Left (DivisionByZero e1 e2)) e1 e2
-  Pow e1 e2   -> perfOp (\ x y -> Right $ x** y ) e1 e2
-  SquareRoot e1 -> perfOp (\_ v -> if v >=0 then Right (sqrt v) else Left (RootOfNegative e1)) e1 e1
-  Var v         -> case lookup v ls of 
-                          Just val -> Right val
-                          Nothing -> Left $ UndefinedVariable v
-  where perfOp op e1 e2 = case (eval e1 ls, eval e2 ls) of
+eval e ls 
+     | not (null duplicates) = Left $ InvalidMapping $ concat duplicates
+     | otherwise    = case e of
+                        Const c      ->  Right c
+                        Plus e1 e2   -> perfOp (\ x y -> Right $ x+y ) e1 e2
+                        Minus e1 e2  -> perfOp (\ x y -> Right $ x-y ) e1 e2
+                        Mult e1 e2   -> perfOp (\ x y -> Right $ x*y ) e1 e2
+                        Div e1 e2    -> perfOp (\ x y -> if y /= 0 then Right (x/y) else Left (DivisionByZero e1 e2)) e1 e2
+                        Pow e1 e2   -> perfOp (\ x y -> Right $ x** y ) e1 e2
+                        SquareRoot e1 -> perfOp (\_ v -> if v >=0 then Right (sqrt v) else Left (RootOfNegative e1)) e1 e1
+                        Var v         -> case lookup v ls of 
+                                            Just val -> Right val
+                                            Nothing -> Left $ UndefinedVariable v
+       where  duplicates = filter (\x -> length x > 1) $  groupBy (\ m1 m2 -> fst m1 == fst m2) $ sortBy (\ m1 m2 -> compare (fst m1) (fst m2)) ls
+              perfOp op e1 e2 = case (eval e1 ls, eval e2 ls) of
                     (Right v1, Right v2) -> op v1 v2
                     (Left er, _) -> Left er
                     (_, Left er) -> Left er
@@ -107,7 +112,10 @@ cases = [
         (Minus (Var "x") (Var "x"), [("x", 14)], Right 0), 
         (Pow (Var "x") (Var "y"), [("x", 2), ("y", 10)], Right 1024 ),
         (Pow (Var "x") (Var "y"), [("x", 2), ("y", 0)], Right 1 ),
-        (Pow (Var "x") (Var "y"), [("x", 0), ("y", 0)], Right 1 )
+        (Pow (Var "x") (Var "y"), [("x", 0), ("y", 0)], Right 1 ),
+        (Plus (Var "x") (Var "y"), [("x", 10), ("x", 20), ("y", 20)], Left $ InvalidMapping [("x", 10), ("x", 20)]),
+        (Plus (Var "x") (Var "y"), [("x", 10), ("x", 20), ("y", 20), ("y", 30)], Left $ InvalidMapping [("x", 10), ("x", 20), ("y", 20), ("y", 30)]),
+        (Plus (Var "x") (Var "y"), [("x", 10), ("x", 20), ("y", 30)], Left $ InvalidMapping [("x", 10), ("x", 20)])
         ] 
 
 test :: Expr ExprConstCaseType -> [(String, ExprConstCaseType)]  -> Either (Error ExprConstCaseType) ExprConstCaseType -> IO () 
@@ -142,34 +150,6 @@ simplify e = if trySimplifyResult /= e then simplify trySimplifyResult else tryS
   trySimplify (Minus expr1 expr2) = if expr1 == expr2 then Const 0 else Minus (trySimplify expr1) (trySimplify expr2)
 
   trySimplify expr = expr
-
-
-
-{-
-simplify :: (Eq a, Fractional a) => Expr a -> Expr a
-simplify e = if trySimplify /= e then simplify trySimplify else trySimplify
-  where 
-        rule1 (Mult (Const 0) _) = Const 0
-        rule1 (Mult _ (Const 0)) = Const 0
-        rule1 ex                 = ex 
-
-        rule2 (Plus (Const 0) r) = r
-        rule2 (Plus l (Const 0)) = l
-        rule2 ex                 = ex 
-
-        rule3 (Mult (Const 1) r) = r
-        rule3 (Mult l (Const 1)) = l
-        rule3 ex                 = ex
-
-        rule4 (Div l (Const 1)) = l
-        rule4 ex                 = ex  
-
-        rule5 (Minus (Const 0) r) = r
-        rule5 (Minus l (Const 0)) = l
-        rule5 ex                 = ex 
-
-        trySimplify = foldl (<$>) id [rule1, rule2, rule3, rule4, rule5] e
--}
 
 
 simplifyTests :: [(Expr ExprConstCaseType, Expr ExprConstCaseType)]
