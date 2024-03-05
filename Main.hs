@@ -153,7 +153,7 @@ simplify (Plus expr (Const 0)) = simplify expr
 simplify (Plus (Const a) (Const b)) = if a + b == 0 then Const 0 else Minus (simplify (Const a)) (simplify (Const b))
 
 
-simplify (Minus (Const 0) expr) = simplify expr
+-- simplify (Minus (Const 0) expr) = simplify expr -- that's wrong
 simplify (Minus expr (Const 0)) = simplify expr
 simplify (Minus (Const a) (Const b)) = if a - b == 0 then Const 0 else Minus (simplify (Const a)) (simplify (Const b))
 
@@ -211,6 +211,7 @@ simplifyCases = [
   (Plus (Var "x") (Const 0.0), Var "x"),
   (Plus (Var "x") (Var "y"), Plus (Var "x") (Var "y")),
   (Minus (Const 3.0) (Const 0.0), Const 3.0),
+  (Minus (Const 0.0) (Const 3.0), Minus (Const 0.0) (Const 3.0)),
   (Minus (Const 3.0) (Const 3.0), Const 0.0),
   (Minus (Const 3.0) (Const 4.0), Minus (Const 3.0) (Const 4.0)),
   (Minus (Var "x") (Var "y"), Minus (Var "x") (Var "y")),
