@@ -100,23 +100,27 @@ eval (Variable s) memory = resolve memory s
 eval (Binary op lhs rhs) memory = evalBinOp op (eval lhs memory) (eval rhs memory)
 eval (UnaryFun fun arg) memory = evalFunUn fun (eval arg memory)
 
+simplifyIn :: (Ord a, Floating a) => Expr a -> Expr a
+simplifyIn (Binary Plus (Number 0) e) = e
+simplifyIn (Binary Plus e (Number 0)) = e
+simplifyIn (Binary Mult (Number 0) e) = 0
+simplifyIn (Binary Mult e (Number 0)) = 0
+simplifyIn (Binary Mult (Number 1) e) = e
+simplifyIn (Binary Mult e (Number 1)) = e
+simplifyIn (Binary Minus e (Number 0)) = e
+simplifyIn (Binary Div e (Number 1)) = e
+simplifyIn (Binary Exp e (Number 1)) = e
+simplifyIn e = e
+
 simplify :: (Ord a, Floating a) => Expr a -> Expr a
-simplify (Binary Plus (Number 0) e) = simplify e
-simplify (Binary Plus e (Number 0)) = simplify e
-simplify (Binary Mult (Number 0) e) = Number 0
-simplify (Binary Mult e (Number 0)) = Number 0
-simplify (Binary Mult (Number 1) e) = simplify e
-simplify (Binary Mult e (Number 1)) = simplify e
-simplify (Binary Minus e (Number 0)) = simplify e
-simplify (Binary Div e (Number 1)) = simplify e
-simplify (Binary Exp e (Number 1)) = simplify e
-simplify (Binary o e1 e2) = Binary o (simplify e1) (simplify e2)
+simplify (Binary op lhs rhs) = simplifyIn (Binary op (simplify lhs) (simplify rhs))
 simplify (UnaryFun fun arg) = UnaryFun fun (simplify arg)
 simplify e = e
 
 instance (Num a) => Num (Expr a) where
   (+) = Binary Plus
   (*) = Binary Mult
+  (-) = Binary Minus -- why not
   negate = Binary Minus (Number 0)
   fromInteger = Number . fromInteger
 
@@ -154,6 +158,9 @@ casesMemory = [
               , ((Variable "x", Right (-1.0)), [("x", -1.0), ("y", -4)])
               , ((Variable "y", Right (-4)), [("x", -1.0), ("y", -4)])
               , ((Variable "z", Left UndefinedVar), [("x", -1.0), ("y", -4)])
+              , (((Variable "x") + (Variable "y"), Right 5), [("x", 2), ("y", 3)])
+              , (((Variable "x") - (Variable "y"), Right (-1)), [("x", 2), ("y", 3)])
+              , ((0 * ((Variable "x") - (Variable "z")), Left UndefinedVar), [("x", 2), ("y", 3)])
               ]
 
 testWithMemory :: (Ord a, Floating a, Show a) => Expr a -> Either Error a -> [(String, a)] -> IO ()
@@ -168,6 +175,13 @@ casesSimplify :: [(Expr Double, Expr Double)]
 casesSimplify = [
                   (Binary Plus (Number 0) (Number 1), Number 1)
                 , (Binary Plus (Number 0) (Binary Plus (Number 0) (Number 1)), Number 1)
+                , (0 + (Variable "x"), Variable "x")
+                , ((Variable "x") + 0, Variable "x")
+                , ((Variable "x") * 0, 0)
+                , (0 * (Variable "Wow, I'm not a char!"), 0)
+                , ((Variable "x" + 15) * 0, 0)
+                , ((Variable "z" * 0) + 3, 3)
+                , (1 * Variable "x", Variable "x")
                 ]
 
 testSimplify :: (Ord a, Floating a, Show a) => Expr a -> Expr a -> IO ()
