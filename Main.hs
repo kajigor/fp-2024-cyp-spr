@@ -2,6 +2,7 @@ module Main where
 
 import Text.Printf (printf)
 import Control.Monad (unless)
+import qualified Data.Map.Strict as M
 
 
 -- instance Functor (Either a) where
@@ -42,15 +43,16 @@ instance Show Error where
   show (NoSuchVariable) = printf "No such variable"
 
 
-eval :: (Floating a, Ord a) => Expr a -> [(String, a)] -> Either Error a 
+eval :: (Floating a, Ord a) => Expr a -> M.Map String a -> Either Error a 
 eval (Const n) _ = Right n
 eval (Var s) xs = evalVarValue s xs
 eval (SquareRoot exp) xs = evalSquareRootExp (eval exp xs)
 eval (BinExpr binOp exp1 exp2) xs = evalBinExp binOp (eval exp1 xs) (eval exp2 xs) 
 
-evalVarValue :: String ->  [(String, a)] -> Either Error a 
-evalVarValue _ [] = Left NoSuchVariable
-evalVarValue s (x:xs) = if (s == (fst x)) then Right (snd x) else evalVarValue s xs
+evalVarValue :: String -> M.Map String a -> Either Error a 
+evalVarValue s map = case M.lookup s map of
+  Nothing -> Left NoSuchVariable
+  Just a -> Right a 
 
 evalSquareRootExp :: (Floating a, Ord a) =>  Either Error a -> Either Error a
 evalSquareRootExp (Left error) = Left error
@@ -145,7 +147,7 @@ testEval expr expected =
     let actual = eval expr variables in 
     unless (expected == actual) $ describeFailure actual
   where
-    variables = [("x", 1), ("y", 2), ("z", 3)] 
+    variables = M.fromList [("x", 1), ("y", 2), ("z", 3)] 
     describeFailure actual = 
       printf "eval (%s) should be %s but it was %s" (show expr) (show expected) (show actual) 
   
