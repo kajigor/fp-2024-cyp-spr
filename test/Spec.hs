@@ -1,2 +1,96 @@
 main :: IO ()
 main = putStrLn "Test suite not yet implemented"
+
+
+
+--cases :: Eq a => Num a => [(Expr a, Either (Error a) a)]
+--cases = [
+-- -- Double as expression = Double
+-- (Arg 56, Right 56),
+-- -- Negative of expression = Negative double
+-- (Marg Neg (Arg 3), Right (-3)),
+-- (Marg Neg (Arg 0), Right 0),
+-- -- Negative of negative expression = Positive Double
+-- (Marg Neg (Marg Neg (Arg 3)), Right 3),
+-- -- Sqrt of expression = Double
+-- (Marg Sqrt (Arg 4), Right 2),
+-- (Marg Sqrt (Arg (169)), Right 13),
+-- (Marg Sqrt (Arg (0)), Right 0),
+-- -- Sqrt of negative value as expression = OutOfPossibleValuesError
+-- (Marg Sqrt (Arg (-169)), Left (OutOfPossibleValuesError Sqrt (-169))),
+-- -- Sqrt of negative expression = OutOfPossibleValuesError
+-- (Marg Sqrt (Marg Neg (Arg 169)), Left (OutOfPossibleValuesError Sqrt (-169))),
+-- -- Simple binary evaluations = Double
+-- (CE (Arg 1) Plus (Arg 2.2), Right 3.2),
+-- (CE (Arg 2) Min (Arg 1.25), Right 0.75),
+-- (CE (Arg 3.5) Mul (Arg 10), Right 35),
+-- (CE (Arg 4) Div (Arg 2), Right 2),
+-- (CE (Arg 5) Div (Arg 2), Right 2.5),
+-- (CE (Arg (-5)) Div (Arg 2), Right (-2.5)),
+-- (CE (Arg (-5)) Div (Marg Neg (Arg 2)), Right 2.5),
+-- (CE (Arg 0) Div (Arg 2), Right 0),
+-- (CE (Arg 2) In (Arg 3), Right 8),
+-- (CE (Arg 0) In (Arg 2), Right 0),
+-- (CE (Arg 5) In (Arg 0), Right 1),
+-- (CE (Arg 0) In (Arg 0), Right 1),
+-- -- Simple binary expression with division by zero = ZeroDivisionError
+-- (CE (Arg 6) Div (Arg 0), Left (ZeroDivisionError 6)),
+-- (CE (Arg 0) Div (Arg 0), Left (ZeroDivisionError 0)),
+-- (CE (Arg 4) Plus (CE (Arg 5) Min (Arg 6)), Right 3),
+-- -- Simple binary expression with zero-degree = IncorrectDegreeOfValue
+-- (CE (Arg 0) In (Arg (-5)), Left (IncorrectDegreeOfValue (-5))),
+-- -- Complex expressions = Double
+-- (CE (CE (Arg 5) Min (Arg 6)) Plus (Arg 4), Right 3),
+-- (CE (Marg Neg (Arg 7)) Min (Marg Neg (Arg 3)), Right (-4)),
+-- (CE (CE (Arg 2) Mul (Marg Sqrt (Arg 9))) Plus (CE (Arg 0) Plus (Marg Neg (Arg 5))), Right 1),
+-- -- Complex expression with error in sub-expression = Exception of first sub expression Error
+-- (CE (CE (Arg 2) Mul (Marg Sqrt (Arg (-9)))) Plus (CE (Arg 0) Plus (Marg Neg (Arg 5))), Left (OutOfPossibleValuesError Sqrt (-9))),
+-- (CE (CE (Arg 2) Mul (Marg Sqrt (Arg (9)))) Plus (CE (Arg 2) Div (Marg Neg (Arg 0))), Left (ZeroDivisionError 2)),
+-- (CE (CE (Arg 2) Mul (Marg Sqrt (Arg (-9)))) Plus (CE (Arg 2) Div (Marg Neg (Arg 0))), Left (OutOfPossibleValuesError Sqrt (-9))),
+-- -- Variables
+-- (Var "x", Right 2),
+-- (Var "y", Right 0),
+-- (CE (Var "x") Mul (Arg 3), Right 6),
+-- (CE (Var "x") Mul (Var "y"), Right 0),
+-- (CE (Var "x") Plus (Var "y"), Right 2),
+-- (CE (Var "x") In (Var "y"), Right 1),
+-- (CE (Var "y") In (Arg (-2)), Left (IncorrectDegreeOfValue (-2))),
+-- (CE (Var "z") Mul (Arg 3), Left (VariableDoesNotExist "z")),
+-- (CE (Arg 3) Mul (Var "z"), Left (VariableDoesNotExist "z"))
+-- ]
+--
+--
+--casesSimplify = [
+--  (Var "x", Var "x"),
+--  (CE (Var "x") Plus (Arg 0), Var "x"),
+--  (CE (Arg 0) Plus (Var "x"), Var "x"),
+--  (CE (Var "x") Mul (Arg 1), Var "x"),
+--  (CE (Arg 1) Mul (Var "x"), Var "x"),
+--  (CE (Var "x") Min (Arg 0), Var "x"),
+--  (CE (Arg 0) Min (Var "x"), Marg Neg (Var "x")),
+--  (CE (Var "x") Mul (Arg 0), Arg 0),
+--  (CE (Arg 0) Mul (Var "x"), Arg 0),
+--  (CE (Var "x") Div (Arg 1), Var "x"),
+--  ]
+--
+----test :: Expr a -> Either (Error a) a -> IO ()
+--test expr expected =
+--    let actual = eval expr [("x", 2), ("y", 0)] in
+--    unless (expected == actual) $ describeFailure actual
+--  where
+--    describeFailure actual =
+--      printf "eval (%s) should be %s but it was %s" (show expr) (show expected) (show actual)
+--
+--
+--testSimplify expr expected =
+--    let actual = simplify expr in
+--    unless (expected == actual) $ describeFailure actual
+--  where
+--    describeFailure actual =
+--      printf "eval (%s) should be %s but it was %s" (show expr) (show expected) (show actual)
+--
+--
+--main :: IO ()
+--main = do
+--  mapM_ (uncurry test) cases
+--  mapM_ (uncurry testSimplify) casesSimplify
