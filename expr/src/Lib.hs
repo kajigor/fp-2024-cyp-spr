@@ -1,10 +1,8 @@
 {-# LANGUAGE InstanceSigs #-}
 module Lib where
 
-import Text.Printf (printf)
-import Control.Monad (unless)
 import Data.Either (fromRight, fromLeft)
-import Data.Map.Strict as Map
+import Data.Map.Strict as M
 
 newtype MyEither a b = MyEither (Either a b) deriving (Show)
 
@@ -88,7 +86,7 @@ checkFirstArgIsNegative err a _ = Just (fromLeft err a)
 
 
 getVar :: Ord k => k -> Map k b -> Either Error b
-getVar name map = case Map.lookup name map of
+getVar name map = case M.lookup name map of
   Just x -> Right x
   _ -> Left VariableIsUndefined
 
