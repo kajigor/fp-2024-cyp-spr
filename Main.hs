@@ -44,7 +44,8 @@ data Operation = Plus
   | Minus 
   | Mult 
   | Div 
-  | Pow 
+  | Pow
+  deriving Eq
 
 instance Show Operation where 
   show Plus = " + "
@@ -52,14 +53,6 @@ instance Show Operation where
   show Mult = " * "
   show Div = " / "
   show Pow  = " ^ "
-
-instance Eq Operation where 
-  Plus == Plus = True
-  Minus == Minus = True
-  Mult == Mult = True
-  Div == Div = True
-  Pow == Pow = True
-  _ == _ = False
 
 data Expr a = 
   Var String
@@ -75,14 +68,6 @@ instance (Show a) => Show (Expr a) where
   show (Bin exp1 oper exp2) = printf "(%s)" (show exp1 ++ show oper ++ show exp2)
   show (Var name) = name
 
--- instance (Eq a, Floating a, Ord a, Show a, Fractional a) => Eq (Expr a) where 
---   (==) :: Expr a -> Expr a -> Bool
---   Const a == Const b = a == b
---   Var a == Var b = a == b
---   Sqrt exp1 == Sqrt exp2 = exp1 == exp2
---   Bin a1 op1 b1 == Bin a2 op2 b2 = op1 == op2 && a1 == a2 && b1 == b2
---   a == b = eval a == eval b
-
 data Error = DivByZero [Char]
   | NegativeRoot [Char] 
   | UndefVar [Char]
@@ -94,24 +79,17 @@ instance Show Error where
   show (NegativeRoot msg) = printf "ERROR_NEGATIVE_ROOT: %s" msg
   show (UndefVar mag) = printf "ERROR_UNDEFINED_VAR: %s" mag
 
--- instance Eq Error where 
---   DivByZero _ == DivByZero _ = True
---   NegativeRoot _ == NegativeRoot _ = True
---   _ == _ = True
-
 eval :: (Fractional a, Floating a, Ord a, Show a) => Expr a -> [(String, a)] -> Either Error a 
 eval (Const b) env = Right b
 eval (Var name) env = 
-  case [v | (n, v) <- env, n == name] of
-    [] -> Left $ UndefVar name
-    v:_ -> Right v
+  case lookup name env of
+    Nothing -> Left $ UndefVar name
+    Just v -> Right v
 
 eval (Sqrt exp) env = 
-  let ans = eval exp env in 
-    if isLeft ans then ans else 
-      let val = fromRight 1 ans in 
-        if val < 0 then Left $ NegativeRoot $ show val 
-        else Right $ sqrt val
+  case eval exp env of 
+    Left err -> Left err
+    Right a -> if a < 0 then Left $ NegativeRoot $ show a else Right $ sqrt a
 
 eval (Bin exp1 op exp2) env
   | op == Plus = resolveOperation exp1 (+) exp2 env
@@ -121,8 +99,8 @@ eval (Bin exp1 op exp2) env
     let ans1 = eval exp1 env
         ans2 = eval exp2 env in
     case (ans1, ans2) of 
-      (Right _, Left _) -> ans2
-      (Left msg, _) -> ans1
+      (Left _, _) -> ans1
+      (_, Left _) -> ans2
       (Right d1, Right 0.0) -> Left $ DivByZero $ show d1
       _ -> resolveOperation exp1 (/) exp2 env
   | op == Pow = resolveOperation exp1 (**) exp2 env
@@ -132,8 +110,8 @@ resolveOperation exp1 op exp2 env =
   let ans1 = eval exp1 env 
       ans2 = eval exp2 env in
   case (ans1, ans2) of
-    (Right _, Left _) -> ans2
-    (Left msg, _) -> ans1
+    (Left _, _) -> ans1
+    (_, Left _) -> ans2
     (Right d1, Right d2) -> Right $ d1 `op` d2
 
 simplify :: (Eq a, Fractional a, Ord a) => Expr a -> Expr a
