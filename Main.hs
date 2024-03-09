@@ -144,7 +144,10 @@ simplify expr =
     Sqrt (Const 1.0) -> Const 1.0
     Sqrt exp -> Sqrt $ simplify exp
 
-   
+instance (Fractional a, Num a) => Num (Expr a) where
+  (+) exp = Bin exp Plus
+  (*) exp = Bin exp Mult
+  negate = Bin (Const 0) Minus
   
 casesSimplify :: (RealFloat a, Ord a, Show a) => [(Expr a, Expr a)]
 casesSimplify = [
