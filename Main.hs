@@ -34,7 +34,7 @@ func :: (Num a, Fractional a, Floating a, Eq a) => Op -> a -> a -> Either Error 
 func Add a b = Right (a + b)
 func Sub a b = Right (a - b)
 func Mul a b = Right (a * b)
-func Div a 0.0 = Left DivideByZero
+func Div a 0 = Left DivideByZero
 func Div a b = Right (a / b)
 func Pow a b = Right (a ** b)
 
