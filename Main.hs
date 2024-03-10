@@ -83,6 +83,7 @@ data MyEither a b = MyLeft a | MyRight b
 
 instance Functor (MyEither a) where
   fmap f (MyRight x) = MyRight (f x)
+  fmap f (MyLeft x) = MyLeft x
 
 -- fmap id (MyRight x) = MyRight x
 -- fmap (f . g) (MyRight x) = MyRight ((f . g) x), 
