@@ -1,25 +1,28 @@
 module Simplify ( simplify ) where 
 
-import Expr ( Expr (..), BinOp (..), UnOp (..) )
+import Expr ( Expr (..), Op (..) )
+import Eval ( func )
 
-simplify :: (Eq a, Num a) => Expr a -> Expr a
-simplify (BinOp op x y) =
-  let x' = simplify x
-      y' = simplify y
-  in  case (op, x', y') of
-        (Mult, Num 1, _) -> y'
-        (Mult, _, Num 1) -> x'
-        (Mult, Num 0, _) -> Num 0
-        (Mult, _, Num 0) -> Num 0
-        (Div, _, Num 1) -> x'
-        (Plus, _, Num 0) -> x'
-        (Plus, Num 0, _) -> y'
-        (Minus, _, Num 0) -> x'
-        (Minus, _, _) | x' == y' -> Num 0
-        _ -> BinOp op x' y'
-simplify (UnOp op x) =  
-  case (op, simplify x) of 
-    (Sqrt, Num 0) -> Num 0 
-    (Sqrt, Num 1) -> Num 1
-    (_, x') -> UnOp Sqrt x' 
+simplify :: (Floating a, Eq a) => Expr a -> Expr a
+simplify (Sqrt x) = oneSimplify (Sqrt (simplify x))
+simplify (BinOp op l r) = oneSimplify (BinOp op (simplify l) (simplify r))
 simplify x = x
+
+oneSimplify :: (Floating a, Eq a) => Expr a -> Expr a
+oneSimplify (Sqrt (Num a)) = Num (sqrt a)
+oneSimplify (BinOp op (Num a) (Num b)) =
+  case calc of
+    Right x -> Num x
+    _ -> BinOp op (Num a) (Num b)
+  where calc = func op a b
+oneSimplify (BinOp Add (Num 0.0) b) = b
+oneSimplify (BinOp Add a (Num 0.0)) = a
+oneSimplify (BinOp Sub a (Num 0.0)) = a
+oneSimplify (BinOp Mul (Num 1.0) b) = b
+oneSimplify (BinOp Mul a (Num 1.0)) = a
+oneSimplify (BinOp Mul (Num 0.0) b) = Num 0.0
+oneSimplify (BinOp Mul a (Num 0.0)) = Num 0.0
+oneSimplify (BinOp Div (Num 0.0) b) = Num 0.0
+oneSimplify (BinOp Pow (Num 0.0) b) = Num 0.0
+oneSimplify (BinOp Pow a (Num 1.0)) = a
+oneSimplify expr = expr
