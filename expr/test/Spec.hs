@@ -2,12 +2,13 @@ import Test.Tasty ( defaultMain, testGroup, TestTree )
 import Test.Tasty.HUnit ( (@?=), testCase, assertBool, assertFailure )
 import Expr ( Expr (..), Op (..) )
 import Eval ( eval )
+import Simplify ( simplify )
 import Error
 import qualified Data.Map.Strict as M
 
 testEval :: TestTree
 testEval =
-    testGroup "Eval" [ testCorrect, testPow ]
+    testGroup "Eval" [ testCorrect, testFailed, testPow ]
   where
     testEvalNoVarSuccess msg expr res =
        testCase msg $ eval expr M.empty @?= Right res
@@ -31,11 +32,13 @@ testEval =
       ]
     testEvalNoVarFailed expr err =
        testCase ("Must throw: `" ++ show err ++ "`") $ eval expr M.empty @?= Left err
+    testEvalWithVarFailed expr err =
+       testCase ("Must throw: `" ++ show err ++ "`") $ eval expr testMap @?= Left err
     testFailed = testGroup "Incorrect expressions"
       [ testEvalNoVarFailed (Sqrt (Num (-1.0))) SquareRootOfNegative
       , testEvalNoVarFailed (BinOp Div (Sqrt (-1)) (BinOp Div (Var "four") ((Var "x") - (Var "x")))) SquareRootOfNegative
-      , testEvalNoVarFailed (BinOp Div (BinOp Div (Var "four") ((Var "x") - (Var "x"))) (Sqrt (-1))) DivideByZero
-      , testEvalNoVarFailed 
+      , testEvalWithVarFailed (BinOp Div (BinOp Div (Var "four") ((Var "x") - (Var "x"))) (Sqrt (-1))) DivideByZero
+      , testEvalWithVarFailed 
           (BinOp Pow
             (((Var "abracadabra") - 1) + (2 * 3))
             (BinOp Div 10 ((Num 3) - (Num 1))))
@@ -49,6 +52,28 @@ testEval =
       case eval expr M.empty of
         Right x -> assertBool "Should be NaN" (isNaN x)
         Left x -> assertFailure $ "Evaluation produced an error " ++ show x
+    testSimplifiedSuccess expr res =
+       testCase ("simplify (" ++ show expr ++ ") == " ++ show res) $ simplify expr @?= res
+    testSimplified = testGroup "Simplify"
+      [ testSimplifiedSuccess (Num 1.0) (Num 1.0)
+      , testSimplifiedSuccess (Sqrt 4) 2
+      , testSimplifiedSuccess ((4 - 1) + ((Var "two") * (Num 3))) 9
+      , testSimplifiedSuccess (Var "x") (Var "x")
+      , testSimplifiedSuccess (1 + 2 + 3) 6
+      , testSimplifiedSuccess (5 * 2 - 3) 7
+      , testSimplifiedSuccess (5 * 2 - (Sqrt (Num 9.0))) (Num 7.0)
+      , testSimplifiedSuccess ((Var "x") +  0) (Var "x")
+      , testSimplifiedSuccess (0 + (Var "x")) (Var "x")
+      , testSimplifiedSuccess ((Var "x") - 0) (Var "x")
+      , testSimplifiedSuccess ((Var "x") * 0) 0
+      , testSimplifiedSuccess (0 * (Var "x")) 0
+      , testSimplifiedSuccess (1 * (Var "x")) (Var "x")
+      , testSimplifiedSuccess ((Var "x") * 1) (Var "x")
+      , testSimplifiedSuccess (BinOp Div 0 (Var "x")) 0
+      , testSimplifiedSuccess (BinOp Pow 0 (Var "x")) 0  
+      , testSimplifiedSuccess (BinOp Pow (Var "x") 1) (Var "x")
+      ]
+
 
 main :: IO ()
 main =
@@ -62,53 +87,3 @@ testMap = M.fromList
     ("two", 2.0),
     ("four", 4.0)
   ]
-
-
--- cases :: Fractional a => [(Expr a, Either Error a)]
--- cases = [
---   (Num 1.0, Right 1.0),
---   (Sqrt (Num (-1.0)), Left SquareRootOfNegative),
---   (Sqrt (Num 4), Right 2),
---   (BinOp
---     Add
---       (BinOp Sub (Num 4) (Num 1))
---       (BinOp Mul (Var "two") (Num 3)),
---     Right 9),
---   (BinOp
---     Div
---       (BinOp Div (Var "four") (BinOp Mul (Num 1) (Num 0)))
---       (Sqrt (Num (-1))),
---     Left DivideByZero),
---   (BinOp
---     Div
---       (Sqrt (Num (-1)))
---       (BinOp Div (Var "four") (BinOp Sub (Var "x") (Var "x"))),
---     Left SquareRootOfNegative),
---   (BinOp
---     Div
---     (Sqrt (Num 100))
---     (BinOp Div (Num 10) (BinOp Sub (Num 6) (Num 1))),
---     Right 5),
---   (BinOp
---     Pow
---       (BinOp
---         Add
---         (BinOp Sub (Var "four") (Num 1))
---         (BinOp Mul (Num 2) (Num 3)))
---       (BinOp
---         Div
---         (Num 10)
---         (BinOp Sub (Num 3) (Num 1))),
---     Right (9 ^ 5)),
---       (BinOp
---     Pow
---       (BinOp
---         Add
---         (BinOp Sub (Var "abracadabra") (Num 1))
---         (BinOp Mul (Num 2) (Num 3)))
---       (BinOp
---         Div
---         (Num 10)
---         (BinOp Sub (Num 3) (Num 1))),
---     Left IncorrectVariableName)
---   ]
