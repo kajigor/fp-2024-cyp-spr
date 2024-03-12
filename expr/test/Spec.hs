@@ -5,7 +5,6 @@ import Eval ( eval )
 import Simplify ( simplify )
 import Error
 import qualified Data.Map.Strict as M
-import Main (testSimplified)
 
 testEval :: TestTree
 testEval =
@@ -58,7 +57,7 @@ testEval =
     testSimplified = testGroup "Simplify"
       [ testSimplifiedSuccess (Num 1.0) (Num 1.0)
       , testSimplifiedSuccess (Sqrt 4) 2
-      , testSimplifiedSuccess ((4 - 1) + ((Var "two") * (Num 3))) 9
+      , testSimplifiedSuccess ((4 - 1) + (2 * (Num 3))) 9
       , testSimplifiedSuccess (Var "x") (Var "x")
       , testSimplifiedSuccess (1 + 2 + 3) 6
       , testSimplifiedSuccess (5 * 2 - 3) 7
