@@ -5,10 +5,11 @@ import Eval ( eval )
 import Simplify ( simplify )
 import Error
 import qualified Data.Map.Strict as M
+import Main (testSimplified)
 
 testEval :: TestTree
 testEval =
-    testGroup "Eval" [ testCorrect, testFailed, testPow ]
+    testGroup "Eval" [ testCorrect, testFailed, testPow, testSimplified ]
   where
     testEvalNoVarSuccess msg expr res =
        testCase msg $ eval expr M.empty @?= Right res
