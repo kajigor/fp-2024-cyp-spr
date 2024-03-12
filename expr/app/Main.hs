@@ -1,6 +1,8 @@
 module Main (main) where
 
-import Lib
+import Expr
 
 main :: IO ()
-main = someFunc
+main = do
+  mapM_ (uncurry test) cases
+  mapM_ (uncurry testSimplify) simplifyCases
