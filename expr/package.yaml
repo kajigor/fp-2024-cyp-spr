@@ -22,6 +22,8 @@ description:         Please see the README on GitHub at <https://github.com/gith
 dependencies:
 - base >= 4.7 && < 5
 - containers
+- tasty
+- tasty-hunit
 
 ghc-options:
 - -Wall
@@ -45,16 +47,20 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -Wno-type-defaults
     dependencies:
     - expr
 
 tests:
-  expr-test:
-    main:                Spec.hs
+  main-test:
+    main:                Tests.hs
     source-dirs:         test
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -Wno-type-defaults
     dependencies:
     - expr
+    - tasty
+    - tasty-hunit
