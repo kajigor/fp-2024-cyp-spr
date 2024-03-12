@@ -17,4 +17,3 @@ main = do
   printSimplified $ 1 - 0
   printSimplified $ 1 - 1  
   printSimplified $ 0 * 1 + 2 * 3 - (Var "v") * 0 - 2 * 3 
-  

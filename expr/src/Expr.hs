@@ -1,22 +1,30 @@
 module Expr where 
 
-import qualified Data.Map.Strict as M 
+data Expr a = Var String
+              | Const a
+              | Plus (Expr a) (Expr a)
+              | Minus (Expr a) (Expr a)
+              | Mult (Expr a) (Expr a)
+              | Div (Expr a) (Expr a)
+              | Pow (Expr a) (Expr a)
+              | Root (Expr a)
+              deriving (Eq)
 
-data BinOp = Plus | Mult | Minus | Div | Pow deriving (Show, Eq)
-data UnOp = Sqrt deriving (Show, Eq)
 
-data Expr a
-  = Num a
-  | Var String
-  | BinOp BinOp (Expr a) (Expr a)
-  | UnOp UnOp (Expr a)
-  deriving (Show, Eq)
+instance (Show a) => Show (Expr a) where
+  show (Var ex) = ex
+  show (Const ex) = show ex
+  show (Plus ex1 ex2) = "(" ++ show ex1 ++ " + " ++ show ex2 ++ ")"
+  show (Minus ex1 ex2) = "(" ++ show ex1 ++ " - " ++ show ex2 ++ ")"
+  show (Mult ex1 ex2) = "(" ++ show ex1 ++ " * " ++ show ex2 ++ ")"
+  show (Div ex1 ex2) = "(" ++ show ex1 ++ " / " ++ show ex2 ++ ")"
+  show (Pow ex1 ex2) = "(" ++ show ex1 ++ " ** " ++ show ex2 ++ ")"
+  show (Root ex) = "(" ++ "root " ++ show ex ++ ")"
 
-instance Num a => Num (Expr a) where
-  a + b = BinOp Plus a b
-  a - b = BinOp Minus a b
-  a * b = BinOp Mult a b
-  abs = error "abs not implemented"
-  signum = error "signum not implemented"
-  fromInteger i = Num (fromInteger i)
-  negate = BinOp Mult (Num (-1))
+instance (Num a) => Num (Expr a) where
+  (+) = Plus
+  (*) = Mult
+  negate = Minus (Const 0)
+  abs expr = undefined -- is possible to define, but only with the evaluation
+  signum expr = undefined -- same reason
+  fromInteger = Const . fromInteger
