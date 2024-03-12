@@ -25,7 +25,9 @@ source-repository head
 
 library
   exposed-modules:
+      Eval
       Expr
+      Simplify
   other-modules:
       Paths_expr
   autogen-modules:
@@ -63,11 +65,15 @@ test-suite main-test
   other-modules:
       EvalTests
       SimplifyTests
+      Eval
+      Expr
+      Simplify
       Paths_expr
   autogen-modules:
       Paths_expr
   hs-source-dirs:
       test
+      src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -Wno-type-defaults
   build-depends:
       base >=4.7 && <5

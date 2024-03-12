@@ -54,7 +54,9 @@ executables:
 tests:
   main-test:
     main:                Tests.hs
-    source-dirs:         test
+    source-dirs:         
+    - test
+    - src
     ghc-options:
     - -threaded
     - -rtsopts
