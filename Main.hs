@@ -80,20 +80,20 @@ getFun Div    = (/)
 getFun Exp    = (**)
 
 evalBinOp :: (Ord a, Floating a) => BinOp -> Either Error a -> Either Error a -> Either Error a
-evalBinOp _ (Left e) _ = Left e
-evalBinOp _ _ (Left e) = Left e
 evalBinOp op@Div (Right lhs) (Right rhs)  = if (rhs == 0) then Left DivByZero else Right $ getFun op lhs rhs
 evalBinOp op@Exp (Right lhs) (Right rhs)  = if (lhs < 0)  then Left NegExponent else Right $ getFun op lhs rhs
 evalBinOp op (Right lhs) (Right rhs)      = Right $ getFun op lhs rhs
+evalBinOp _ eea1 eea2 = case eea1 of Left e  -> eea1
+                                     Right e -> eea2
+
 
 evalFunUn :: (Ord a, Floating a) => FunOpUn -> Either Error a -> Either Error a
 evalFunUn _ (Left e) = Left e
 evalFunUn Sqrt (Right arg) = if (arg < 0) then Left NegSqrt else Right $ sqrt arg
 
 resolve :: (Ord a, Floating a) => [(String, a)] -> String -> Either Error a
-resolve [] _ = Left UndefinedVar
-resolve ((key, value):memory) name = if (name == key) then Right value else resolve memory name
-
+resolve memory name = case lookup name memory of Nothing -> Left UndefinedVar
+                                                 Just value -> Right value
 eval :: (Ord a, Floating a) => Expr a -> [(String, a)] -> Either Error a
 eval (Number x) _ = Right x
 eval (Variable s) memory = resolve memory s
@@ -161,6 +161,7 @@ casesMemory = [
               , (((Variable "x") + (Variable "y"), Right 5), [("x", 2), ("y", 3)])
               , (((Variable "x") - (Variable "y"), Right (-1)), [("x", 2), ("y", 3)])
               , ((0 * ((Variable "x") - (Variable "z")), Left UndefinedVar), [("x", 2), ("y", 3)])
+              , ((Variable "x", Right 1), [("x", 1), ("x", 2)]) -- let's only look at the first one
               ]
 
 testWithMemory :: (Ord a, Floating a, Show a) => Expr a -> Either Error a -> [(String, a)] -> IO ()
