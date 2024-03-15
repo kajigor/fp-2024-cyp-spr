@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      Functor
       Lib
   other-modules:
       Paths_expr

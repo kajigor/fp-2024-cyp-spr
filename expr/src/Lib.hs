@@ -1,24 +1,7 @@
 {-# LANGUAGE InstanceSigs #-}
-module Lib where
-
-import Data.Either (fromRight, fromLeft)
-import Data.Map.Strict as M
-
-newtype MyEither a b = MyEither (Either a b) deriving (Show)
-
-instance Functor (MyEither err) where
-    fmap :: (f -> t) -> MyEither err f -> MyEither err t
-    fmap _ (MyEither (Left x)) = MyEither(Left x)
-    fmap f (MyEither (Right x)) = MyEither(Right (f x))
-
-
-newtype MyArrow a b = MyArrow((->) a b)
-
-instance Functor (MyArrow f) where
-    fmap :: (a -> b) -> MyArrow f a -> MyArrow f b
-    fmap f (MyArrow g)  = MyArrow (f . g)
-
-
+module Lib (Expr(..), Error(..), eval, simplify) where
+import Data.Either (fromLeft)
+import Data.Map.Strict as M ( lookup, Map )
 
 data Expr a = Const a | Var String | Add (Expr a) (Expr a) | Subtract (Expr a) (Expr a) | Multiply (Expr a) (Expr a) | Divide (Expr a) (Expr a) | Power (Expr a) (Expr a) | Square (Expr a) deriving (Eq)
 
