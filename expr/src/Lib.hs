@@ -17,17 +17,17 @@ instance (Show a) => Show (Expr a) where
   show (Var name) = name
 
 instance (Num a) => Num (Expr a) where
-  (+) :: Num a => Expr a -> Expr a -> Expr a
+  (+) :: Expr a -> Expr a -> Expr a
   (+) = Add 
-  (*) :: Num a => Expr a -> Expr a -> Expr a
+  (*) :: Expr a -> Expr a -> Expr a
   (*) = Multiply
-  abs :: Num a => Expr a -> Expr a
+  abs :: Expr a -> Expr a
   abs = undefined
-  signum :: Num a => Expr a -> Expr a
+  signum :: Expr a -> Expr a
   signum = undefined
-  fromInteger :: Num a => Integer -> Expr a
+  fromInteger :: Integer -> Expr a
   fromInteger = Const . fromInteger
-  negate :: Num a => Expr a -> Expr a
+  negate :: Expr a -> Expr a
   negate = Multiply (Const (-1))
   
 
@@ -42,8 +42,8 @@ instance Show Error where
 
 performOp :: (a -> a -> a) -> Either Error a -> Either Error a -> Either Error a
 performOp f a b = case a of
-    Right fst -> case b of
-      Right snd -> Right (f fst snd)
+    Right first -> case b of
+      Right second -> Right (f first second)
       err -> err
     err -> err
 
@@ -69,7 +69,7 @@ checkFirstArgIsNegative err a _ = Just (fromLeft err a)
 
 
 getVar :: Ord k => k -> Map k b -> Either Error b
-getVar name map = case M.lookup name map of
+getVar name dict = case M.lookup name dict of
   Just x -> Right x
   _ -> Left VariableIsUndefined
 
@@ -77,15 +77,15 @@ getVar name map = case M.lookup name map of
 
 
 eval :: (Ord b, Floating b) => Expr b -> Map String b -> Either Error b
-eval expr map = case expr of
+eval expr dict = case expr of
   Const val -> Right val
-  Var name -> getVar name map
-  Add a b -> performOp (+) (eval a map) (eval b map)
-  Subtract a b -> performOp (-) (eval a map) (eval b map)
-  Multiply a b -> performOp (*) (eval a map) (eval b map)
-  Divide a b -> performOpWithCheck checkDivisorIsZero (/) (eval a map) (eval b map)
-  Power a b -> performOpWithCheck (checkFirstArgIsNegative PowerBaseIsNegative) (**) (eval a map) (eval b map)
-  Square a -> performOpWithCheck (checkFirstArgIsNegative SquareRootIsNegative) (**) (eval a map) (Right 0.5)
+  Var name -> getVar name dict
+  Add a b -> performOp (+) (eval a dict) (eval b dict)
+  Subtract a b -> performOp (-) (eval a dict) (eval b dict)
+  Multiply a b -> performOp (*) (eval a dict) (eval b dict)
+  Divide a b -> performOpWithCheck checkDivisorIsZero (/) (eval a dict) (eval b dict)
+  Power a b -> performOpWithCheck (checkFirstArgIsNegative PowerBaseIsNegative) (**) (eval a dict) (eval b dict)
+  Square a -> performOpWithCheck (checkFirstArgIsNegative SquareRootIsNegative) (**) (eval a dict) (Right 0.5)
 
 
 simplifyAdd :: (Eq a, Fractional a) => Expr a -> Expr a -> Expr a
