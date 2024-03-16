@@ -3,7 +3,28 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: optparse-applicative-0.17.1.0@sha256:cb5f5f0dc9749846fc0e3df0041a8efee6368cc1cff07336acd4c3b02a951ed6,5147
+    pantry-tree:
+      sha256: be7241e9c51c9e2bb4b9966b1a308258ed93b471d125611f068dc0279fcdc669
+      size: 3124
+  original:
+    hackage: optparse-applicative-0.17.1.0@sha256:cb5f5f0dc9749846fc0e3df0041a8efee6368cc1cff07336acd4c3b02a951ed6,5147
+- completed:
+    hackage: ansi-wl-pprint-0.6.9@sha256:fb737bc96e2aef34ad595d54ced7a73f648c521ebcb00fe0679aff45ccd49212,2448
+    pantry-tree:
+      sha256: ebb02b32915c04146b193949c3c48d9e8200c152f38947e8d23ca25b0997e188
+      size: 472
+  original:
+    hackage: ansi-wl-pprint-0.6.9@sha256:fb737bc96e2aef34ad595d54ced7a73f648c521ebcb00fe0679aff45ccd49212,2448
+- completed:
+    hackage: tasty-1.5@sha256:8da3f47fff790714f7d676692f1207aac156b41f705c55f14d1d8147a751264b,2787
+    pantry-tree:
+      sha256: d139b379075ff0204ad2aa2e20ba668534b21d03f8d712077e03e6d9294b2b8f
+      size: 1944
+  original:
+    hackage: tasty-1.5@sha256:8da3f47fff790714f7d676692f1207aac156b41f705c55f14d1d8147a751264b,2787
 snapshots:
 - completed:
     sha256: 2fdd7d3e54540062ef75ca0a73ca3a804c527dbf8a4cadafabf340e66ac4af40
