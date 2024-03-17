@@ -13,16 +13,16 @@ instance Functor (MyEither err) where
 
 {-
 Proof:
-1) pure id <*> v === MyRight id <*> v === id v === v
-2) pure f <*> pure x === MyRight f <*> MyRight x === f <$> x === MyRight (f x) === pure (f x)
-3) u <*> pure y === pure ($ y) <*> u
+1) Identity: pure id <*> v === MyRight id <*> v === id v === v
+2) Homomorphism: pure f <*> pure x === MyRight f <*> MyRight x === f <$> x === MyRight (f x) === pure (f x)
+3) Interchange: u <*> pure y === pure ($ y) <*> u
 Case 1: u == MyLeft x
   MyLeft x <*> pure y === MyLeft x
   pure ($ y) <*> MyLeft x === MyRight ($ y) <$> MyLeft x === MyLeft x
 Case 2: u == MyRight x
   MyRight x <*> pure y === MyRight x <$> MyRight y === MyRight (x y)
   pure ($ y) <*> u === MyRight ($ y) <$> MyRight x === MyRight ($ y x) == MyRight (x y)
-4) pure (.) <*> u <*> v <*> w === u <*> (v <*> w)
+4) Composition: pure (.) <*> u <*> v <*> w === u <*> (v <*> w)
 Case 1: u == MyLeft x
   pure (.) <*> MyLeft x <*> v <*> w === MyLeft x <*> _ === MyLeft x
   MyLeft x <*> (_) === MyLeft x
