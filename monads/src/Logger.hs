@@ -1,3 +1,4 @@
+{-# LANGUAGE InstanceSigs #-}
 module Logger where
 
 data Logger l a = Logger [l] a deriving (Show, Eq)

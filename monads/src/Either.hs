@@ -1,3 +1,4 @@
+{-# LANGUAGE InstanceSigs #-}
 module Either where 
 
 data MyEither a b 

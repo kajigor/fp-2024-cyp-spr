@@ -1,5 +1,5 @@
+{-# LANGUAGE InstanceSigs #-}
 module List where 
-import Distribution.Simple.Utils (xargs)
 
 data List a 
   = Nil 
