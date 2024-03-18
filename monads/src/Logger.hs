@@ -4,12 +4,25 @@ data Logger l a = Logger [l] a deriving (Show, Eq)
 
 -- Implement the instance and prove the laws
 instance Functor (Logger l) where 
+    fmap f (Logger a b) = Logger a (f b)
+    --fmap id (Logger a b) = Logger a (id b) = Logger a b
+    --fmap (f . g) (Logger a b) = Logger a ((f . g) b) = Logger a (f (g b)) = fmap f (Logger a (g b)) = fmap f . fmap g (Logger a b)
 
 -- Implement the instance and prove the laws
-instance Applicative (Logger l) where 
+instance Applicative (Logger l) where
+    pure = Logger []
+    Logger la a <*> Logger lb b = Logger (la ++ lb) (a b)
+    --pure id <*> v = Logger [] id <*> Logger lv av = Logger ([] ++ lv) (id av) = Logger lv av = v
+    --pure (.) <*> u <*> v <*> w = Logger [] (.) <*> Logger lu au <*> Logger lv av <*> Logger lw aw = 
+    --  Logger ([] ++ lu) ((.) au) <*> Logger lv av <*> Logger lw aw = Logger (lu ++ lv ++ lw) ((au . av) aw) = 
+    --  Logger (lu ++ lv ++ lw) (au (av aw)) = Logger lu au <*> (Logger (lv ++ lw) (av aw)) = u <*> v <*> w
+    --pure f <*> pure x = Logger [] f <*> Logger [] x = Logger [] (f x) = pure (f x)
+    --u <*> pure y = Logger lu au <*> Logger [] y = Logger lu (($ y) au) = Logger [] ($ y) <*> Logger lu au = pure ($ y) <*> u 
 
 -- Implement the instance and prove the laws
-instance Monad (Logger l) where 
+instance Monad (Logger l) where
+    Logger l x >>= f = Logger l id <*> f x
+
 
 -- Writes a single log message. 
 -- Can be easily bound together with other logging computations.
