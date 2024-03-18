@@ -30,8 +30,7 @@ instance Applicative (MyEither a) where
   pure v = MyRight v
 
   (<*>) (MyLeft e) _ = MyLeft e
-  (<*>) (MyRight f) (MyLeft e) = MyLeft e
-  (<*>) (MyRight f) (MyRight a) = MyRight $ f a
+  (<*>) (MyRight f) r = fmap f r
 
 {-  proof:
 

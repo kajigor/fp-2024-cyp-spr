@@ -9,6 +9,9 @@ flattern Nil = Nil
 flattern (Cons Nil ls) = flattern ls
 flattern (Cons (Cons x xs) vs) = Cons x (flattern (Cons xs vs))
 
+append Nil     xs = xs
+append (Cons e es) xs = Cons e (append es xs)
+
 foldLeft f acc Nil = acc
 foldLeft f acc (Cons a ls) = foldLeft f (f acc a) ls 
 
@@ -33,11 +36,11 @@ instance Functor List where
 -- Implement the instance and prove the laws
 instance Applicative List where 
   pure v = Cons v Nil
-  (<*>) fs xs = flattern $ reverseList $foldLeft (\lss f -> Cons (fmap f xs) lss) Nil fs 
+  (<*>) Nil _ = Nil 
+  (<*>) (Cons f fs) xs = append (fmap f xs) (fs <*> xs)
 
 -- Implement the instance and prove the laws
 instance Monad List where
-  return v = Cons v Nil
   (>>=) xs k = flattern $ fmap k xs
 
 {-
