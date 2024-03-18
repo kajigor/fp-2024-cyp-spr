@@ -1,4 +1,7 @@
 import Test.Tasty (defaultMain, testGroup, TestTree)
+import Eval
+import Simplify
+import Error
 import Expr
 import Test.Tasty.HUnit ( (@?=), testCase, assertBool, assertFailure)
 import Data.Map.Strict (fromList)
@@ -80,7 +83,7 @@ testSimplify =
         testSquareRoot = testGroup "testSquareRoot"
             [
                 testCase "sqrt(0) => 0" $ simplify (SquareRoot (Const 0)) @?= Const 0
-                , testCase "sqrt(0) => 0" $ simplify (SquareRoot (Const 1)) @?= Const 1
+                , testCase "sqrt(1) => 1" $ simplify (SquareRoot (Const 1)) @?= Const 1
             ]
         testMixed = testGroup "testMixed"
             [
