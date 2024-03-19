@@ -42,3 +42,10 @@ instance Monad List where
   (>>=) :: List a -> (a -> List b) -> List b
   Nil >>= _ = Nil
   Cons a la >>= f = conList (f a) (la >>= f)
+  --pure x >>= f = Cons x Nil >>= f = conList (f x) Nil = f x
+  --m >>= pure,
+  --  if m = Nil then Nil >>= pure = Nil,
+  --  m = Cons a la, m >>= f = conList (pure a) (la >>= pure) = Cons a (la >>= pure) = Cons a la = m
+  --m >>= f is the same as concatMap f m for usual lists. 
+  --  so for m >>= f >>= g is a flattened list of (f_i x_j) >>= g (we iterate through j inside iteration through i)
+  --  on the other hand, m >>= (\x -> f x >>= g) is a list of (\x -> f x >>= g) $ x_i or flattened list of f_i x_j >>= g (we iterate through j inside iteration through i) 

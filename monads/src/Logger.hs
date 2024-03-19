@@ -22,6 +22,10 @@ instance Applicative (Logger l) where
 -- Implement the instance and prove the laws
 instance Monad (Logger l) where
     Logger l x >>= f = Logger l id <*> f x
+    --pure x >>= f = Logger [] x >>= f = Logger [] id <*> f x = f x
+    --m >>= pure = Logger lm am >>= pure = Logger lm id <*> Logger [] am = Logger lm am = m
+    --m >>= f >>= g = Logger lm am >>= f >>= g = Logger lm id <*> f am >>= g,
+    --  m >>= (\x -> f x >>= g) = Logger lm am >>= (\x -> f x >>= g) = Logger lm id <*> (f am >>= g), which is the same as before.
 
 
 -- Writes a single log message. 

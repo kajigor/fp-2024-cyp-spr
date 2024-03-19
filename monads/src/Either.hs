@@ -1,4 +1,4 @@
-module Either where 
+module Either where
 
 data MyEither a b 
   = MyLeft a 
@@ -37,3 +37,11 @@ instance Applicative (MyEither a) where
 instance Monad (MyEither a) where
   MyLeft x >>= _ = MyLeft x
   MyRight x >>= f = f x
+  --pure x >>= f = MyRight x >>= f = f x
+  --m >>= return,
+  --  m = MyLeft ml, MyLeft ml >>= return = MyLeft ml
+  --  m = MyRight mr, MyRight mr >>= return = return mr = MyRight mr
+  --(m >>= f) >>= g,
+  --  m = MyLeft ml, (MyLeft ml >>= f) >>= g = MyLeft ml = MyLeft ml >>= (\x -> f x >>= g)
+  --  m = MyRight mr, (MyRight mr >>= f) >>= g = f mr >>= g,
+  --  MyRight mr >>= (\x f x >>= g) = f mr >>= g
