@@ -2,12 +2,12 @@ module Logger where
 
 data Logger l a = Logger [l] a deriving (Show, Eq)
 
--- Implement the instance and prove the laws
+-- Implement the instance and prove the laws (I proved Monad with 3 rules, without <*> -> no need to comment it)
 instance Functor (Logger l) where
   fmap f (Logger list value) = Logger list (f value)
 
 
--- Implement the instance and prove the laws
+-- Implement the instance and prove the laws (I proved Monad with 3 rules, without <*> -> no need to comment it)
 instance Applicative (Logger l) where
   pure value = Logger [] value
   (Logger logs1 function) <*> (Logger logs2 item) = Logger (logs1 ++ logs2) (function item)
@@ -37,3 +37,26 @@ factLog n
       let res = n * prev
       writeLog (n, res)
       return res
+
+
+-- Left identity:
+-- return a >>= k = k a
+
+-- return x >>= f
+-- Logger _ x >>= f
+-- f x
+
+
+-- Right identity:
+-- m >>= return = m
+
+-- Logger _ a >>= return
+-- return a
+-- m a
+
+
+-- Associativity:
+-- m >>= (\x -> k x >>= h) = (m >>= k) >>= g
+
+-- Logger _ a >>= (\x -> k x >>= h) = k a >>= h
+-- (Logger _ a >>= k) >>= h === k a >>= h
