@@ -52,5 +52,5 @@ instance Monad (MyEither a) where
 -- 1) return b >>= k === MyRight b >>= k === k b 
 -- 2) m >>= return === Eather a b >>= return === Eather a b === m
 -- 3) m >>= (\x -> k x >>= h) === Eather a b >>= (\x -> k x >>= h) ===
--- k (a|b) >>= h === h (a|b) =?= m >>= k >>= h === Eather a b >>= k >>= h ===
--- k (a|b) >>= h === h (a|b) - true
+-- k (Eather a b) >>= h === (h . k) (Eather a b) =?= m >>= k >>= h === Eather a b >>= k >>= h ===
+-- k (Eather a b) >>= h === (h . k) (Eather a b) - true
