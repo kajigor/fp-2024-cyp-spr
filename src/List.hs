@@ -5,13 +5,16 @@ data List a
   | Cons a (List a)
   deriving (Show, Eq)
 
+
 concatList Nil list = list
 concatList (Cons head1 tail1) list2 = Cons head1 (concatList tail1 list2)
+
 
 -- Implement the instance and prove the laws
 instance Functor List where
   fmap function Nil = Nil
   fmap function (Cons head tail) = Cons (function head) (fmap function tail)
+
 
 ---- Implement the instance and prove the laws
 instance Applicative List where
@@ -19,9 +22,8 @@ instance Applicative List where
   Nil <*> _ = Nil
   Cons headFunction tailFunction <*> Cons headItem tailItem = Cons (headFunction headItem) (tailFunction <*> tailItem)
   _ <*> _ = Nil
---  listOfFunctions <*> listOfItems = fmap listOfFunctions listOfItems
---
---
+
+
 -- Implement the instance and prove the laws
 instance Monad List where
   Nil >>= handler = Nil
