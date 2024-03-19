@@ -12,7 +12,8 @@ instance Functor (Logger l) where
 -- id: 
 --     fmap id (Logger l a) === Logger l (id a) === Looger l a
 -- Composition:
---     fmap (f . g) (Logger l a) === Logger l ((f . g) a) === 
+--     fmap (f . g) (Logger l a) === Logger l ((f . g) a) =?= 
+-- ((fmap f) . (fmap g)) (Logger l a) === fmap f (Logger l (g a)) === Logger l ((f . g) a)
 --
 -- Implement the instance and prove the laws
 instance Applicative (Logger l) where 

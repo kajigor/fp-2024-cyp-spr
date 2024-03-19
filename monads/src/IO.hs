@@ -6,7 +6,7 @@ import Control.Concurrent (getChanContents)
 myGetLine :: IO String 
 myGetLine = do 
   ch <- getChar 
-  if ch == '\n' then return "" else myGetLine >>= (\x -> return (ch:x)) 
+  if ch == '\n' then return "" else myGetLine >>= (\x -> return (ch:x))
 
 -- Ask the user for their name.
 -- Print "Hello, NAME" to the standard output, where NAME is the name of the user.
