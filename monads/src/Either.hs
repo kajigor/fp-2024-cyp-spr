@@ -12,9 +12,9 @@ instance Functor (MyEither a) where
   fmap f (MyRight x) = MyRight (f x)
 
 {-
-  1) fmap id = id
-  fmap id (MyLeft x) = (MyLeft x)
-  fmap id (MyRight x) = MyRight (id x) =  MyRight x  
+  1) fmap id == id
+  fmap id (MyLeft x) == (MyLeft x)
+  fmap id (MyRight x) == MyRight (id x) == MyRight x  
   
   2) fmap (f . g)  ==  fmap f . fmap g
   fmap (f . g) (MyLeft x) == MyLeft x == fmap f (MyLeft x) == fmap f (fmap g (MyLeft x)) == (fmap f . fmap g) (MyLeft x) 
