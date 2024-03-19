@@ -17,8 +17,8 @@ instance Functor (MyEither a) where
   fmap id (MyRight x) = MyRight (id x) =  MyRight x  
   
   2) fmap (f . g)  ==  fmap f . fmap g
-  fmap (f . g) (MyLeft x) = MyLeft x = fmap f (MyLeft x) = fmap f . fmap g (MyLeft x)
-  fmap (f . g) (MyRight x) = MyRight (f.g) x = fmap f (MyRight g x) = fmap f . fmap g (MyRight x)
+  fmap (f . g) (MyLeft x) == MyLeft x == fmap f (MyLeft x) == fmap f (fmap g (MyLeft x)) == (fmap f . fmap g) (MyLeft x) 
+  fmap (f . g) (MyRight x) == MyRight (f.g) x == fmap f (MyRight g x) == fmap f (fmap g (MyRight x)) == (fmap f . fmap g) (MyRight x)
 -}
 
 -- Implement the instance and prove the laws
