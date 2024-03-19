@@ -2,7 +2,6 @@
 module Expr where
 
 import Text.Printf (printf)
-import qualified Data.Map.Strict
 import Control.Monad (unless)
 
 
