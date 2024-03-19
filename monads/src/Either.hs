@@ -58,9 +58,11 @@ instance Monad (MyEither a) where
 {-
   1) return a >>= k = k a
   return a >>= k == MyRight a >>= k == k a 
+
   2) m >>= return = m
   MyLeft f >>= return == MyLeft f
   MyRight f >>= return == return f == MyRight f
+  
   3) m >>= (\x -> k x >>= h) = (m >>= k) >>= h
   MyLeft m >>= (\x -> k x >>= h) == MyLeft m == MyLeft m >>= k == (MyLeft m >>= k) >>= h
   MyRight m >>= (\x -> k x >>= h) == (k m) >>= h == (MyRight m >>= k) >>= h
