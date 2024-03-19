@@ -1,4 +1,4 @@
-module List where
+module List(List(..)) where
 
 data List a
   = Nil

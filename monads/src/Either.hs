@@ -1,4 +1,4 @@
-module Either where
+module Either(Either(..)) where
 
 data MyEither a b
   = MyLeft a
