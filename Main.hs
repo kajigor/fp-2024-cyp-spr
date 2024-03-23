@@ -5,11 +5,25 @@ import Text.Printf (printf)
 
 ageOn :: String -> Float -> Float
 ageOn planet ageInSeconds =
-  undefined
+  case planet of
+      "Mercury" -> ageInSeconds / 31557600 / 0.2408467
+      "Venus" -> ageInSeconds / 31557600 / 0.61519726
+      "Earth" -> ageInSeconds / 31557600 / 1.0
+      "Mars" -> ageInSeconds / 31557600 / 1.8808158
+      "Jupiter" -> ageInSeconds / 31557600 / 11.862615
+      "Saturn" -> ageInSeconds / 31557600 / 29.447498
+      "Uranus" -> ageInSeconds / 31557600 / 84.016846
+      "Neptune" -> ageInSeconds / 31557600 / 164.79132
+      "Pluto" -> error "Pluto not a planet"
+      _ -> error $ printf "Unknown planet `%s`" planet
 
 isLeapYear :: Int -> Bool
-isLeapYear year =
-  undefined
+isLeapYear year
+    | year < 0 = error $ printf "Year `%d` is a negative integer" year
+    | year `mod` 400 == 0 = True
+    | year `mod` 100 == 0 = False
+    | year `mod` 4 == 0 = True
+    | otherwise = False
 
 main = do 
   runTests
