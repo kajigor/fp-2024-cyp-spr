@@ -6,17 +6,34 @@ import Text.Printf (printf)
 import Control.Monad (unless)
 import Data.List (sort)
 
+-- 1. Implement (not so quick) `quicksort :: [Int] -> [Int]`.
+--   * Naive recursive implementation is fine, don't try to make it run in `O(n*(log n))`
+
 quickSort :: [Int] -> [Int]
-quickSort = id 
+quickSort [] = []  -- Base case: Empty list, return an empty list
+quickSort (x:xs) = lessThanX ++ [x] ++ greaterThanX
+  where
+    lessThanX = quickSort [y | y <- xs, y <= x]
+    greaterThanX = quickSort [y | y <- xs, y > x]
+
+-- 2. Implement `map' :: (a -> b) -> [a] -> [b]` using a fold.
+--   * It should behave exactly like the `map` from `Prelude`.
 
 map' :: (a -> b) -> [a] -> [b]
-map' = undefined 
+map' f xs = [f x | x <- xs]
+
+-- 3. Implement `concatMap' :: (a -> [b]) -> [a] -> [b]` which is equivalent to concatenating all the lists produced by applying the function to every element of the input list.
+--   * `concatMap words ["a a a a", "b b b", "c"] == ["a","a","a","a","b","b","b","c"]`
 
 concatMap' :: (a -> [b]) -> [a] -> [b]
-concatMap' = undefined 
+concatMap' f xs = concat [f x | x <- xs]
+
+--4. Implement `positions :: (a -> Bool) -> [a] -> [Int]` which finds all indices of elements of the input list for which the predicate holds.
+--   * `positions (==0) [0,1,0,0,1,1,0] == [0, 2, 3, 6]`
+
 
 positions :: (a -> Bool) -> [a] -> [Int]
-positions = undefined 
+positions f xs = [i | (i, x) <- zip [0..] xs, f x]
 
 main = do
   runTests
