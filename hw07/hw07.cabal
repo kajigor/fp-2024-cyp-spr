@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -25,7 +25,9 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Expr
+      Parser
+      StateDemo
   other-modules:
       Paths_hw07
   autogen-modules:
@@ -35,6 +37,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , containers
   default-language: Haskell2010
 
 executable hw07-exe
@@ -55,6 +58,9 @@ test-suite hw07-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      EvalTests
+      ParserTests
+      Utils
       Paths_hw07
   autogen-modules:
       Paths_hw07
@@ -63,5 +69,8 @@ test-suite hw07-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , containers
     , hw07
+    , tasty
+    , tasty-hunit
   default-language: Haskell2010
