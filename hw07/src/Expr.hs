@@ -1,7 +1,8 @@
 {-# LANGUAGE InstanceSigs #-}
 module Expr (BinaryOperator(..), UnaryOperator(..), Expr(..), Error(..), eval, simplify) where
 import Data.Either (fromLeft)
-import StateDemo (State, execState, get, modify )
+import Data.Map.Strict as M ( lookup, Map, empty, fromList)
+import StateDemo (State, get, execState)
 
 data BinaryOperator = Plus | Minus | Multiply | Divide | Power deriving (Eq)
 
@@ -77,11 +78,11 @@ getVar value = case value of
   _ -> Left VariableIsUndefined
 
 
-eval :: (Ord b, Floating b) => Expr b -> State [(String, b)] (Either Error b)
+eval :: (Ord b, Floating b) => Expr b -> State (Map String b) (Either Error b)
 eval (Const x) = do
   return (Right x)
 eval (Var v) = do
-  getVar . lookup v <$> get
+  getVar . M.lookup v <$> get
 eval (BinOp op x y) = do
   f <- eval x
   s <- eval y

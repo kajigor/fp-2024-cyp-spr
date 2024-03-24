@@ -108,7 +108,7 @@ satisfyUnOp :: Parser String
 satisfyUnOp = Parser $ \str ->
   go str ""
   where
-    go rest@(' ':t) buff =
+    go rest@(' ':_) buff =
       if buff `elem` unaryOps
         then Right (rest, buff) else Left ("Unknown unary operation: " ++ buff)
     go (h:t) buff = go t (buff ++ [h])
