@@ -59,6 +59,7 @@ test-suite hw07-test
   main-is: Spec.hs
   other-modules:
       EvalTests
+      ParserTests
       Utils
       Paths_hw07
   autogen-modules:
