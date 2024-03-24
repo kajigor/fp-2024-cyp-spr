@@ -7,8 +7,7 @@ module Parser where
 
 import Data.Char ( isAlpha, isAlphaNum, isDigit, digitToInt )
 import Control.Applicative ( Alternative((<|>), empty, many) )
-import Expr (Expr(..), eval)
-import Text.Parsec (parserPlus, digit)
+import Expr (BinaryOperator(..), UnaryOperator(..), Expr(..), eval)
 
 
 -- It's not clear how to compose the parsers above, so people usually use a different abstraction for a parser. 
@@ -75,17 +74,17 @@ satisfy p = Parser $ \str ->
 
 parseIdent :: Parser String
 parseIdent = do
-    h <- satisfy isAlpha 
-    t <- go              
-    let ident = h : t    
+    h <- satisfy isAlpha
+    t <- go
+    let ident = h : t
     if ident `elem` unaryOps then empty else return ident
   where
-    go = (do                    
-        x <- satisfy isAlphaNum 
-        y <- go                 
-        return (x : y))         
+    go = (do
+        x <- satisfy isAlphaNum
+        y <- go
+        return (x : y))
       <|>
-        return []               
+        return []
 
 parseBinOp :: Parser (Expr Int)
 parseBinOp = do
@@ -93,13 +92,12 @@ parseBinOp = do
   satisfy (== ' ')
   f <- parseExpression
   satisfy (== ' ')
-  s <- parseExpression
-  return (case op of
-      '+' -> Add f s
-      '-' -> Subtract f s
-      '*' -> Multiply f s
-      '/' -> Divide f s
-      '^' -> Power f s)
+  BinOp (case op of
+      '+' -> Plus
+      '-' -> Minus
+      '*' -> Multiply
+      '/' -> Divide
+      '^' -> Power) f <$> parseExpression
   where
     pred = (`elem` ['+', '-', '/', '*', '^'])
 
@@ -107,7 +105,7 @@ unaryOps :: [String]
 unaryOps = ["sqrt"]
 
 satisfyUnOp :: Parser String
-satisfyUnOp :: Parser String = Parser $ \str ->
+satisfyUnOp = Parser $ \str ->
   go str ""
   where
     go rest@(' ':t) buff =
@@ -123,7 +121,7 @@ parseUnOp = do
   expr <- parseExpression
   return (
     case str of
-    "sqrt" -> Square expr
+    "sqrt" -> UnOp Square expr
     )
 
 parseInt :: Parser Int

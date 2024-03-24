@@ -1,5 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
-module Expr (Expr(..), Error(..), eval, simplify) where
+module Expr (BinaryOperator(..), UnaryOperator(..), Expr(..), Error(..), eval, simplify) where
 import Data.Either (fromLeft)
 import StateDemo (State, execState, get, modify )
 
